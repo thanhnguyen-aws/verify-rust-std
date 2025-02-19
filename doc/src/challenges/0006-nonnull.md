@@ -5,7 +5,7 @@
 - **Start date:** *2024/08/16*
 - **End date:** *2025/04/10*
 - **Reward:** *N/A*
-
+- **Contributors**: [Quinyuan Wu](https://github.com/QinyuanWu), [Daniel Tu](https://github.com/danielhumanmod), Dhvani Kapadia(https://github.com/Dhvani-Kapadia) and JY(https://github.com/Jimmycreative)
 -------------------
 
 
