@@ -2647,11 +2647,11 @@ mod verify {
                     ptr.write_bytes(val, count);
 
                     // Create a non-deterministic count
-                    //let i: usize = kani::any_where(|&x| x < count * $byte_size);
-                    //let ptr_byte = ptr.as_ptr() as *const u8;
+                    let i: usize = kani::any_where(|&x| x < count * $byte_size);
+                    let ptr_byte = ptr.as_ptr() as *const u8;
 
                     // Read back the value and assert it's correct
-                    //assert_eq!(*ptr_byte.add(i), val);
+                    assert_eq!(*ptr_byte.add(i), val);
                 }
             }
         };
