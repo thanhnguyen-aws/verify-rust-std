@@ -16,9 +16,9 @@ Ideally, we expect the elementary functions `cosf16` to be correctly-rounded (th
 under all rounding-modes). However, it is not always the case.
 
 In this challenge, for each function listed in the next section, you are required to either:
-- If the function is correctly-rounded, prove that.
+- Prove that the function is correctly-rounded.
 OR
-- If not, provide an input to to confirm that, then provide a "tight" rigorous bound for the relative error of that function. 
+- Provide an input to show that the function is not correctly-rounded, then provide a "tight" rigorous bound for the relative error of that function. 
 A bound is considered "tight" if you can provide an input such that the error is at least 90% the magnitude of the bound.
 
 
