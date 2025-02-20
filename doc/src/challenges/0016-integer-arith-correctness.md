@@ -1,4 +1,4 @@
-# Challenge 24: Correctness of primitive integer types' arithmetic functions
+# Challenge 16: Correctness of primitive integer types' arithmetic functions
 
 - **Status:** Open
 - **Tracking Issue:** [#71](https://github.com/model-checking/verify-rust-std/issues/71)
@@ -11,6 +11,8 @@
 ## Goal
 
 Verify the correctness of primitive integer types' arithmetic functions in `core::num::mod.rs`.
+
+For this challenge, you can assume that all the intrinsic functions are correct.
 
 
 ### Success Criteria

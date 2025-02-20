@@ -1,4 +1,4 @@
-# Challenge 24: Correctness of primitive integer types' bit functions
+# Challenge 17: Correctness of primitive integer types' bit functions
 
 - **Status:** Open
 - **Tracking Issue:** [#71](https://github.com/model-checking/verify-rust-std/issues/71)
@@ -12,6 +12,7 @@
 
 Verify the correctness of primitive integer types' functions in `core::num::mod.rs`.
 
+For this challenge, you can assume that all the intrinsic functions are correct.
 
 ### Success Criteria
 

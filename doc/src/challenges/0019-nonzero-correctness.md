@@ -1,4 +1,4 @@
-# Challenge 23: Correctness of `NonZero` functions
+# Challenge 19: Correctness of `NonZero` functions
 
 - **Status:** Open
 - **Tracking Issue:** [#71](https://github.com/model-checking/verify-rust-std/issues/71)
@@ -24,7 +24,7 @@ the primitive integer types (under safety preconditions of Challenge 12).
 For example, for the `max` function, you need to prove that 
 `∀ T in {isize, i8, i16, ... , usize, u8, ... },  ∀ x, y : NonZero<T>, x.max(y).get() == x.get().max(y.get())`
 
-Proving the correctness of the functions of primitive integer types is proposed in Challenge 24 and 25.
+Proving the correctness of the functions of primitive integer types is proposed in Challenge 16 and 17.
 
 ### Success Criteria
 
