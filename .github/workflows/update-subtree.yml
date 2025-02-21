@@ -77,6 +77,7 @@ jobs:
         git remote add rust-filtered ../rust-tmp/
         git fetch rust-filtered
         git checkout -b subtree/library rust-filtered/subtree/library
+        rm -rf library
         SUBTREE_HEAD_MSG=$(git log --format=%s -n 1 origin/subtree/library)
         UPSTREAM_FROM=$(git log --grep="${SUBTREE_HEAD_MSG}" -n 1 --format=%H rust-filtered/subtree/library)
         UPSTREAM_HEAD=$(git log --format=%H -n 1 rust-filtered/subtree/library)
