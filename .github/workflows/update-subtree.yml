@@ -74,8 +74,9 @@ jobs:
         fi
       env:
         GH_TOKEN: ${{ github.token }}
-        
+
     - name: Update subtree/library locally
+      if: ${{ env.SUBTREE_PR_EXISTS == 'no' }}
       run: |
         cd rust-tmp
 
@@ -106,8 +107,8 @@ jobs:
           echo "MERGE_CONFLICTS=maybe" >> $GITHUB_ENV
         fi
 
-    - name: Create Pull Request
-      if: ${{ env.MERGE_CONFLICTS != 'noop' }}
+    - name: Create Pull Request to update subtree/library
+      if: ${{ env.MERGE_CONFLICTS != 'noop' && env.SUBTREE_PR_EXISTS == 'no' }}
       uses: peter-evans/create-pull-request@v7
       with:
         title: 'Update subtree/library to ${{ env.NEXT_TOOLCHAIN_DATE }}'
@@ -121,7 +122,7 @@ jobs:
         path: verify-rust-std
 
     - name: Merge subtree/library changes
-      if: ${{ env.MERGE_CONFLICTS != 'noop' }}
+      if: ${{ env.MERGE_CONFLICTS != 'noop' && env.MERGE_PR_EXISTS == 'no' }}
       run: |
         cd verify-rust-std
         git checkout main
@@ -141,7 +142,7 @@ jobs:
           commit -m "Update toolchain to ${NEXT_TOOLCHAIN_DATE}" rust-toolchain.toml
 
     - name: Create Pull Request without conflicts
-      if: ${{ env.MERGE_CONFLICTS == 'no' }}
+      if: ${{ env.MERGE_CONFLICTS == 'no' && env.MERGE_PR_EXISTS == 'no' }}
       uses: peter-evans/create-pull-request@v7
       with:
         title: 'Merge subtree update for toolchain nightly-${{ env.NEXT_TOOLCHAIN_DATE }}'
@@ -156,7 +157,7 @@ jobs:
         path: verify-rust-std
 
     - name: Create Pull Request with conflicts
-      if: ${{ env.MERGE_CONFLICTS == 'yes' }}
+      if: ${{ env.MERGE_CONFLICTS == 'yes' && env.MERGE_PR_EXISTS == 'no' }}
       uses: peter-evans/create-pull-request@v7
       with:
         title: 'Merge subtree update for toolchain nightly-${{ env.NEXT_TOOLCHAIN_DATE }}'
