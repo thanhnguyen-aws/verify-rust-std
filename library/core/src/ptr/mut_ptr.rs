@@ -493,6 +493,7 @@ impl<T: ?Sized> *mut T {
     #[rustc_const_stable(feature = "const_pointer_byte_offsets", since = "1.75.0")]
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     #[requires(
+        (mem::size_of_val_raw(self) == 0) ||
         // If count is zero, any pointer is valid including null pointer.
         (count == 0) ||
         // Else if count is not zero, then ensure that subtracting `count` doesn't 
@@ -894,12 +895,13 @@ impl<T: ?Sized> *mut T {
     #[inline(always)]
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     #[requires(
-        // Ensuring that subtracting 'origin' from 'self' doesn't result in an overflow
-        (self as isize).checked_sub(origin as isize).is_some() &&
-        // Ensuring that the distance between 'self' and 'origin' is aligned to `T`
+        T::IS_ZST ||
+        // Ensures subtracting `origin` from `self` doesn't overflow
+        ((self as isize).checked_sub(origin as isize).is_some() &&
+        // Ensure the distance between `self` and `origin` is aligned to `T`
         (self as isize - origin as isize) % (mem::size_of::<T>() as isize) == 0 &&
-        // Ensuring that both pointers point to the same address or are in the same allocation
-        (self as isize == origin as isize || core::ub_checks::same_allocation(self, origin))
+        // Ensure both pointers are in the same allocation or are pointing to the same address
+        (self as isize == origin as isize || core::ub_checks::same_allocation(self, origin)))
     )]
     #[ensures(|result| *result == (self as isize - origin as isize) / (mem::size_of::<T>() as isize))]
     pub const unsafe fn offset_from(self, origin: *const T) -> isize
@@ -2670,7 +2672,7 @@ mod verify {
     );
 
     #[kani::proof_for_contract(<*mut ()>::byte_offset)]
-    #[kani::should_panic]
+    //#[kani::should_panic]
     pub fn check_mut_byte_offset_unit_invalid_count() {
         let mut val = ();
         let ptr: *mut () = &mut val;

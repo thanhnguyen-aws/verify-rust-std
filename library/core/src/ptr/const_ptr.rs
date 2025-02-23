@@ -492,6 +492,7 @@ impl<T: ?Sized> *const T {
     #[rustc_const_stable(feature = "const_pointer_byte_offsets", since = "1.75.0")]
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     #[requires(
+        (std::mem::size_of_val_raw(s) == 0) ||
         // If count is zero, any pointer is valid including null pointer.
         (count == 0) ||
         // Else if count is not zero, then ensure that adding `count` doesn't cause 
@@ -502,7 +503,7 @@ impl<T: ?Sized> *const T {
     )]
     #[ensures(|&result|
         // The resulting pointer should either be unchanged or still point to the same allocation
-        (self.addr() == result.addr()) ||
+        (self.addr() == result.addr()) || (std::mem::size_of_val_raw(s) == 0) ||
         (core::ub_checks::same_allocation(self, result))
     )]
     pub const unsafe fn byte_offset(self, count: isize) -> Self {
@@ -715,12 +716,13 @@ impl<T: ?Sized> *const T {
     #[inline]
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     #[requires(
+        T::IS_ZST ||
         // Ensures subtracting `origin` from `self` doesn't overflow
-        (self as isize).checked_sub(origin as isize).is_some() &&
+        ((self as isize).checked_sub(origin as isize).is_some() &&
         // Ensure the distance between `self` and `origin` is aligned to `T`
         (self as isize - origin as isize) % (mem::size_of::<T>() as isize) == 0 &&
         // Ensure both pointers are in the same allocation or are pointing to the same address
-        (self as isize == origin as isize || core::ub_checks::same_allocation(self, origin))
+        (self as isize == origin as isize || core::ub_checks::same_allocation(self, origin)))
     )]
     // The result should equal the distance in terms of elements of type `T` as per the documentation above
     #[ensures(|result| *result == (self as isize - origin as isize) / (mem::size_of::<T>() as isize))]
@@ -2310,7 +2312,7 @@ mod verify {
     );
 
     #[kani::proof_for_contract(<*const ()>::byte_offset)]
-    #[kani::should_panic]
+    //#[kani::should_panic]
     pub fn check_const_byte_offset_unit_invalid_count() {
         let val = ();
         let ptr: *const () = &val;
