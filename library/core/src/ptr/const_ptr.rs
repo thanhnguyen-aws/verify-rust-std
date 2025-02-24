@@ -492,18 +492,16 @@ impl<T: ?Sized> *const T {
     #[rustc_const_stable(feature = "const_pointer_byte_offsets", since = "1.75.0")]
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     #[requires(
-        (std::mem::size_of_val_raw(s) == 0) ||
-        // If count is zero, any pointer is valid including null pointer.
-        (count == 0) ||
-        // Else if count is not zero, then ensure that adding `count` doesn't cause 
-        // overflow and that both pointers `self` and the result are in the same 
-        // allocation 
-        ((self.addr() as isize).checked_add(count).is_some() &&
-            core::ub_checks::same_allocation(self, self.wrapping_byte_offset(count)))
+        count == 0 ||
+        (
+           core::mem::size_of_val_raw(self) > 0 &&
+           self.addr() as isize).checked_add(count).is_some() &&
+           core::ub_checks::same_allocation(self, self.wrapping_byte_offset(count)
+        )
     )]
     #[ensures(|&result|
         // The resulting pointer should either be unchanged or still point to the same allocation
-        (self.addr() == result.addr()) || (std::mem::size_of_val_raw(s) == 0) ||
+        (self.addr() == result.addr()) || (core::mem::size_of_val_raw(s) == 0) ||
         (core::ub_checks::same_allocation(self, result))
     )]
     pub const unsafe fn byte_offset(self, count: isize) -> Self {
@@ -2312,7 +2310,7 @@ mod verify {
     );
 
     #[kani::proof_for_contract(<*const ()>::byte_offset)]
-    //#[kani::should_panic]
+    #[kani::should_panic]
     pub fn check_const_byte_offset_unit_invalid_count() {
         let val = ();
         let ptr: *const () = &val;
