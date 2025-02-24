@@ -718,12 +718,13 @@ impl<T: ?Sized> *const T {
     #[inline]
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     #[requires(
+        T::IS_ZST ||
         // Ensures subtracting `origin` from `self` doesn't overflow
-        (self as isize).checked_sub(origin as isize).is_some() &&
+        ((self as isize).checked_sub(origin as isize).is_some() &&
         // Ensure the distance between `self` and `origin` is aligned to `T`
         (self as isize - origin as isize) % (mem::size_of::<T>() as isize) == 0 &&
         // Ensure both pointers are in the same allocation or are pointing to the same address
-        (self as isize == origin as isize || core::ub_checks::same_allocation(self, origin))
+        (self as isize == origin as isize || core::ub_checks::same_allocation(self, origin)))
     )]
     // The result should equal the distance in terms of elements of type `T` as per the documentation above
     #[ensures(|result| *result == (self as isize - origin as isize) / (mem::size_of::<T>() as isize))]
