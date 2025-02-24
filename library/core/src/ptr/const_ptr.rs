@@ -501,7 +501,7 @@ impl<T: ?Sized> *const T {
     )]
     #[ensures(|&result|
         // The resulting pointer should either be unchanged or still point to the same allocation
-        (self.addr() == result.addr()) || (core::mem::size_of_val_raw(s) == 0) ||
+        (self.addr() == result.addr()) ||
         (core::ub_checks::same_allocation(self, result))
     )]
     pub const unsafe fn byte_offset(self, count: isize) -> Self {
