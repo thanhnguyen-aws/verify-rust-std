@@ -1157,7 +1157,7 @@ impl<T: ?Sized> *mut T {
         // Else if count is not zero, then ensure that subtracting `count` doesn't 
         // cause overflow and that both pointers `self` and the result are in the 
         // same allocation.
-        ((self.addr() as isize).checked_add(count as isize).is_some() &&
+        (count <= isize::MAX as usize && (self.addr() as isize).checked_add(count as isize).is_some() &&
             core::ub_checks::same_allocation(self, self.wrapping_byte_add(count)))
     )]
     #[ensures(|&result|
@@ -1303,7 +1303,7 @@ impl<T: ?Sized> *mut T {
         // Else if count is not zero, then ensure that subtracting `count` doesn't 
         // cause overflow and that both pointers `self` and the result are in the 
         // same allocation.
-        ((self.addr() as isize).checked_sub(count as isize).is_some() &&
+        (count <= isize::MAX as usize && (self.addr() as isize).checked_sub(count as isize).is_some() &&
             core::ub_checks::same_allocation(self, self.wrapping_byte_sub(count)))
     )]
     #[ensures(|&result|
