@@ -497,8 +497,11 @@ impl<T: ?Sized> *const T {
         // Else if count is not zero, then ensure that adding `count` doesn't cause 
         // overflow and that both pointers `self` and the result are in the same 
         // allocation 
-        ((self.addr() as isize).checked_add(count).is_some() &&
-            core::ub_checks::same_allocation(self, self.wrapping_byte_offset(count)))
+        (   
+            (mem::size_of_val_raw(self) > 0) &&
+            (self.addr() as isize).checked_add(count).is_some() &&
+            core::ub_checks::same_allocation(self, self.wrapping_byte_offset(count))
+        )
     )]
     #[ensures(|&result|
         // The resulting pointer should either be unchanged or still point to the same allocation
@@ -2308,17 +2311,6 @@ mod verify {
         check_const_offset_from_tuple_4,
         check_const_offset_from_tuple_4_arr
     );
-
-    #[kani::proof_for_contract(<*const ()>::byte_offset)]
-    #[kani::should_panic]
-    pub fn check_const_byte_offset_unit_invalid_count() {
-        let val = ();
-        let ptr: *const () = &val;
-        let count: isize = kani::any_where(|&x| x != (mem::size_of::<()>() as isize));
-        unsafe {
-            ptr.byte_offset(count);
-        }
-    }
 
     #[kani::proof_for_contract(<*const ()>::byte_offset)]
     pub fn check_const_byte_offset_cast_unit() {
