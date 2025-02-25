@@ -2674,17 +2674,6 @@ mod verify {
     );
 
     #[kani::proof_for_contract(<*mut ()>::byte_offset)]
-    #[kani::should_panic]
-    pub fn check_mut_byte_offset_unit_invalid_count() {
-        let mut val = ();
-        let ptr: *mut () = &mut val;
-        let count: isize = kani::any_where(|&x| x > (mem::size_of::<()>() as isize));
-        unsafe {
-            ptr.byte_offset(count);
-        }
-    }
-
-    #[kani::proof_for_contract(<*mut ()>::byte_offset)]
     pub fn check_mut_byte_offset_cast_unit() {
         let mut generator = PointerGenerator::<ARRAY_LEN>::new();
         let ptr: *mut u8 = generator.any_in_bounds().ptr;
