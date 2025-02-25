@@ -1708,7 +1708,7 @@ impl<T> NonNull<[T]> {
     #[unstable(feature = "ptr_as_uninit", issue = "75402")]
     #[requires(self.as_ptr().cast::<T>().align_offset(core::mem::align_of::<T>()) == 0)] // Ensure the pointer is properly aligned
     #[requires(self.len().checked_mul(core::mem::size_of::<T>()).is_some() && self.len() * core::mem::size_of::<T>() <= isize::MAX as usize)] // Ensure the slice size does not exceed isize::MAX
-    #[requires(kani::mem::same_allocation(self.as_ptr() as *const(), self.as_ptr().byte_add(self.len() * core::mem::size_of::<T>()) as *const()))] // Ensure the slice is contained within a single allocation
+    #[requires(kani::mem::same_allocation(self.as_ptr() as *const(), self.as_ptr().wrapping_byte_add(self.len() * core::mem::size_of::<T>()) as *const()))] // Ensure the slice is contained within a single allocation
     #[ensures(|result: &&mut [MaybeUninit<T>]| result.len() == self.len())] // Length check
     #[ensures(|result: &&mut [MaybeUninit<T>]| core::ptr::eq(result.as_ptr(), self.cast().as_ptr()))] // Address check
     pub const unsafe fn as_uninit_slice_mut<'a>(self) -> &'a mut [MaybeUninit<T>] {
