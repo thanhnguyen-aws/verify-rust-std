@@ -1086,6 +1086,7 @@ impl<T: ?Sized> *mut T {
         // Precondition 1: the computed offset `count * size_of::<T>()` does not overflow `isize`.
         // Precondition 2: adding the computed offset to `self` does not cause overflow.
         // These two preconditions are combined for performance reason, as multiplication is computationally expensive in Kani. 
+        count <= isize::MAX as usize &&
         count.checked_mul(core::mem::size_of::<T>())
         .map_or(false, |computed_offset| {
             computed_offset <= isize::MAX as usize && (self as isize).checked_add(computed_offset as isize).is_some()
