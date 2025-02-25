@@ -679,7 +679,7 @@ impl<T: ?Sized> NonNull<T> {
     #[stable(feature = "non_null_convenience", since = "1.80.0")]
     #[rustc_const_stable(feature = "non_null_convenience", since = "1.80.0")]
     #[requires(
-        s.as_ptr().addr() <= (isize::MAX as usize) &&
+        self.as_ptr().addr() <= (isize::MAX as usize) &&
         count <= (isize::MAX as usize) - self.as_ptr().addr() &&  // Ensure the offset doesn't overflow
         (count == 0 || kani::mem::same_allocation(self.as_ptr(), self.as_ptr().wrapping_byte_add(count))) // Ensure the offset is within the same allocation
     )]
