@@ -2,8 +2,8 @@
 
 - **Status:** Open
 - **Tracking Issue:** [#71](https://github.com/model-checking/verify-rust-std/issues/71)
-- **Start date:** *2025/02/24*
-- **End date:** *2025/08/24*
+- **Start date:** *2025/03/07*
+- **End date:** *2025/10/17*
 - **Reward:** *N/A*
 
 -------------------
@@ -70,5 +70,17 @@ Verify that the following functions and methods (all located within `core::num::
 |  `from_mut_unchecked` |
 
 
+### List of UBs
+
+In addition to any properties called out as `SAFETY` comments in the source
+code,
+all proofs must automatically ensure the absence of the following [undefined behaviors](https://github.com/rust-lang/reference/blob/142b2ed77d33f37a9973772bd95e6144ed9dce43/src/behavior-considered-undefined.md):
+
+* Accessing (loading from or storing to) a place that is dangling or based on a misaligned pointer.
+* Reading from uninitialized memory.
+* Mutating immutable bytes.
+* Producing an invalid value
+
 Note: All solutions to verification challenges need to satisfy the criteria established in the [challenge book](../general-rules.md)
 in addition to the ones listed above.
+
