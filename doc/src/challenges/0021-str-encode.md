@@ -14,7 +14,7 @@ Verify the the correctness of functions related to UTF8 and UTF16 encoding
 
 ### Details
 
-Rust str and String are either UTF8 and UTF16 encoded. Verifying the correctess of the related functions is important in ensuring the safety and correctness of Rust programs that involve Strings.
+Rust str and String are either UTF8 or UTF16 encoded. Verifying the correctess of the related functions is important in ensuring the safety and correctness of Rust programs that involve Strings.
 
 
 ### Success Criteria

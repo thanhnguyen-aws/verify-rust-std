@@ -12,8 +12,8 @@
 ### Details
 
 Most functions in str library is defined on the concept of Pattern, which can be a char, a set of chars, a char filter, or a substring.
-Those functions is implemented in core::src::str, but the core of them is implemented in core::src::str::pattern.
-The main purposes of the functions in core::src::str::pattern is converting a str (a slice of bytes) into some kinds of Searchers (iterators), 
+Those functions is implemented in core::str, but the core of them is implemented in core::src::str::pattern.
+The main purposes of the functions in core::str::pattern is converting a str (a slice of bytes) into some kinds of Searchers (iterators), 
 then implementing the searching alorithm for those Searchers.
 
 IMPORTANT NOTE: You can assume the correctness of the Two-Way search algorithm (see Challenge 23), BUT have to verify the correctness of the simd_contains functions.

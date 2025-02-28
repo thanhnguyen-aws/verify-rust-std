@@ -14,7 +14,7 @@ This algorithm is the main component of implementing searching functions for Pat
 
 ### Success Criteria
 
-Verify the memory safety and functional correctness of the Two-Way search algorithm implementation in str::pattern.
+Verify the memory safety and functional correctness of the Two-Way search algorithm implementation in core::str::pattern.
 
 
 ### List of UBs
