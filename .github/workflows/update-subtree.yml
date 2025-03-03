@@ -119,6 +119,7 @@ jobs:
           This is an automated PR to update the subtree/library branch to the changes
           from ${{ env.CURRENT_TOOLCHAIN_DATE }} (${{ env.CURRENT_COMMIT_HASH }})
           to ${{ env.NEXT_TOOLCHAIN_DATE }} (${{ env.NEXT_COMMIT_HASH }}), inclusive.
+          **Do not merge this PR using the merge queue. Instead, use the rebase strategy.**
         branch: update-subtree/library
         delete-branch: true
         base: subtree/library
