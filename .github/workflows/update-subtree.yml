@@ -58,6 +58,8 @@ jobs:
         echo "NEXT_TOOLCHAIN_DATE=${NEXT_TOOLCHAIN_DATE}" >> $GITHUB_ENV
         echo "CURRENT_COMMIT_HASH=${CURRENT_COMMIT_HASH}" >> $GITHUB_ENV
         echo "NEXT_COMMIT_HASH=${NEXT_COMMIT_HASH}" >> $GITHUB_ENV
+        KANI_COMMIT_HASH=$(git -C kani-tmp rev-parse HEAD)
+        echo "KANI_COMMIT_HASH=${KANI_COMMIT_HASH}" >> $GITHUB_ENV
 
     - name: Check for existing pull requests
       run: |
