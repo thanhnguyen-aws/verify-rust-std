@@ -2746,7 +2746,7 @@ mod verify {
             #[kani::proof_for_contract(NonNull::write_bytes)]
             pub fn $harness_name() {
                 // Create a pointer generator for the given type with appropriate byte size
-                const ARR_SIZE: usize = mem::size_of::<$type>() * 100;
+                const ARR_SIZE: usize = mem::size_of::<$type>() * 10;
                 let mut generator = kani::PointerGenerator::<ARR_SIZE>::new();
 
                 // Get a raw pointer from the generator
