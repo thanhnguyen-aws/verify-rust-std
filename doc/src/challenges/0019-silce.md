@@ -63,7 +63,7 @@ The memory safety of the following public functions that iterating over the inte
 
 The verification must be unbounded---it must hold for slices of arbitrary length.
 
-It is OK to assume that the generic type `T` of the proofs is primitive types, e.g., `i32`, `u32`, `bool`, etc.
+The verification must be hold for generic type `T` (no monomorphization).
 
 ### List of UBs
 
