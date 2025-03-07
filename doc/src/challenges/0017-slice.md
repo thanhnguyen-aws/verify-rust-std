@@ -16,7 +16,7 @@ Verify the safety of [`std::slice`] functions in (library/core/src/slice/mod.rs)
 
 ### Success Criteria
 
-The memory safety of the following public functions that iterating over the internal inductive data type must be verified:
+The safety of the following functions in (library/core/src/slice/mod.rs):
 
 | Function |
 |---------|
