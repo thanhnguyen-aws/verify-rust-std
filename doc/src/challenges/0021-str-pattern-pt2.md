@@ -1,10 +1,10 @@
-# Challenge 20: Verify the correctness of char-related functions in str::pattern
+# Challenge 21: Verify the correctness of char-related functions in str::pattern
 
 - **Status:** Open
 - **Tracking Issue:** [#29](https://github.com/model-checking/verify-rust-std/issues/29)
-- **Start date:** *2025/03/07*
-- **End date:** *2025/10/17*
-- **Reward:** *5,000 USD*
+- **Start date:** *2025-03-07*
+- **End date:** *2025-10-17*
+- **Reward:** *? USD*
 
 -------------------
 
