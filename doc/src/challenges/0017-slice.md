@@ -63,7 +63,7 @@ The safety of the following functions in (library/core/src/slice/mod.rs):
 
 The verification must be unbounded---it must hold for slices of arbitrary length.
 
-The verification must be hold for generic type `T` (no monomorphization).
+The verification must hold for generic type `T` (no monomorphization).
 
 ### List of UBs
 
