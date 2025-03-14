@@ -1,9 +1,9 @@
-# Challenge 17: Verify the safety of `VecDeque` functions
+# Challenge 25: Verify the safety of `VecDeque` functions
 
 - **Status:** Open
 - **Tracking Issue:** [#29](https://github.com/model-checking/verify-rust-std/issues/29)
-- **Start date:** *2025/03/07*
-- **End date:** *2025/10/17*
+- **Start date:** *2025-03-07*
+- **End date:** *2025-10-17*
 - **Reward:** *?*
 
 -------------------
@@ -61,7 +61,7 @@ Verify the safety of the following functions in (library/alloc/src/collections/v
 
 The verification must be unbounded---it must hold for slices of arbitrary length.
 
-The verification must be hold for generic type `T` (no monomorphization).
+The verification must hold for generic type `T` (no monomorphization).
 
 ### List of UBs
 
