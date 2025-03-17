@@ -1,11 +1,10 @@
 # Challenge 12: Safety of `NonZero`
 
-- **Status:** Resolved
+- **Status:** Open
 - **Tracking Issue:** [#71](https://github.com/model-checking/verify-rust-std/issues/71)
 - **Start date:** *2024/08/23*
 - **End date:** *2025/04/10*
 - **Reward:** *N/A*
-- **Contributors**: [Aaron Lang](https://github.com/lang280), [Shivani Ghuge](https://github.com/SahithiMV) and [Alvaro Luna](https://github.com/aa-luna) 
 
 -------------------
 
