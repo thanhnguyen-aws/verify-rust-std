@@ -1236,7 +1236,7 @@ impl<T: ?Sized> NonNull<T> {
     #[rustc_const_stable(feature = "const_ptr_write", since = "1.83.0")]
     #[cfg_attr(kani, kani::modifies(crate::ptr::slice_from_raw_parts(self.as_ptr(), count)))]
     #[requires(
-        count.checked_mul(core::mem::size_of::<T>() as usize).is_some_and(|x| x.wrapping_add(self.as_ptr() as usize) <= isize::MAX as usize) &&
+        count.checked_mul(core::mem::size_of::<T>() as usize).is_some_and(|byte_count| byte_count.wrapping_add(self.as_ptr() as usize) <= isize::MAX as usize) &&
         ub_checks::can_write(core::ptr::slice_from_raw_parts_mut(self.as_ptr(), count))
     )]
     #[ensures(|_|
