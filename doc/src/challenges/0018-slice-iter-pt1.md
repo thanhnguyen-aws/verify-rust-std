@@ -53,10 +53,6 @@ Write and prove the contract for the safety of the following functions:
 |last| 
 |fold| 
 |for_each| 
-|all| 
-|any| 
-|find| 
-|find_map| 
 |position| 
 |rposition| 
 |next_back| 
