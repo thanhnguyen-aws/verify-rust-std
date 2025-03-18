@@ -1,10 +1,10 @@
-# Challenge 22: Verify the safety of `str` iter functions - part 2
+# Challenge 22: Verify the safety of `str` iter functions
 
 - **Status:** Open
-- **Tracking Issue:** [#29](https://github.com/model-checking/verify-rust-std/issues/29)
+- **Tracking Issue:** [#279](https://github.com/model-checking/verify-rust-std/issues/279)
 - **Start date:** *2025-03-07*
 - **End date:** *2025-10-17*
-- **Reward:** *?*
+- **Reward:** *5000*
 
 -------------------
 
@@ -13,7 +13,7 @@
 
 Verify the safety of [`std::str`] functions that are defined in (library/core/src/str/iter.rs):
 
-IMPORTANT NOTE: for this challenge, you can assume: 
+**Important note:** for this challenge, you can assume: 
 1. The safety and functional correctness of all functions in `slice` module 
 2. The safety and functional correctness of all functions in (library/core/src/str/pattern.rs)
 3. That all functions in (library/core/src/str/validations.rs) are functionally correct (consistent with the UTF8 encoding description in https://en.wikipedia.org/wiki/UTF-8). 

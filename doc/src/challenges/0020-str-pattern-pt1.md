@@ -1,23 +1,23 @@
 # Challenge 20: Verify the safety of char-related functions in str::pattern
 
 - **Status:** Open
-- **Tracking Issue:** [#29](https://github.com/model-checking/verify-rust-std/issues/29)
+- **Tracking Issue:** [#277](https://github.com/model-checking/verify-rust-std/issues/277)
 - **Start date:** *2025-03-07*
 - **End date:** *2025-10-17*
-- **Reward:** *? USD*
+- **Reward:** *5000 USD*
 
 -------------------
 
 
 ### Context
 
-A majority portion in str library functions take a Pattern (https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html) as input. 
-The functions which take Pattern as input turn the input str into a kind of Searcher which iterates over positions where the Pattern match, then perform their desired operations (split, find, ...).
+A majority portion in str library functions take a `Pattern` (https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html) as input. 
+The functions which take Pattern as input turn the input str into a kind of `Searcher` (https://doc.rust-lang.org/std/str/pattern/trait.Searcher.html)  which iterates over positions where the Pattern match, then perform their desired operations (split, find, ...).
 Those functions are implemented in (library/core/src/str/mod.rs), but the core of them is the searching algorithms which are implemented in (library/core/src/str/pattern.rs).
 
 # Details
 
-IMPORTANT NOTE: for this challenge, you can assume: 
+**Important note:** for this challenge, you can assume: 
 1. The safety and functional correctness of all functions in `slice` module 
 2. That all functions in (library/core/src/str/validations.rs) are functionally correct (consistent with the UTF8 encoding description in https://en.wikipedia.org/wiki/UTF-8). 
 3. That all the Searchers in (library/core/src/str/iter.rs) are created by the into_searcher(_, haystack) with haystack being a valid utf8 string (str). You can assume any utf8 string property of haystack.
@@ -38,8 +38,8 @@ This property should hold for next_back() of `ReverseSearcher` too.
 
 ### Success Criteria
 
-Verify the safety of the following functions in (library/core/src/str/pattern.rs) : `next`, `next_match`, `next_back`, `next_match_back`, `next_reject`, `next_back_reject`
-which are implemented for the following `Searcher`s:  `CharSearcher`, `MultiCharEqSearcher`, `CharArraySearcher` , `CharArrayRefSearcher`, `CharSliceSearcher`, `CharPredicateSearcher`.
+Verify the safety of the following functions in (library/core/src/str/pattern.rs) : next, next_match, next_back, next_match_back, next_reject, next_back_reject
+which are implemented for the following `Searcher`s:  CharSearcher, MultiCharEqSearcher, CharArraySearcher , CharArrayRefSearcher, CharSliceSearcher, CharPredicateSearcher.
 
 The verification is consider successful if for each `Searcher` above, you can specify a condition (a "type invariant") C and prove that:
 1. If the `Searcher` is created from any valid utf8 haystack, it satisfies C.

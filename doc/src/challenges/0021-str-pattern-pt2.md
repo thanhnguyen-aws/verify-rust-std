@@ -1,10 +1,10 @@
-# Challenge 21: Verify the correctness of char-related functions in str::pattern
+# Challenge 21: Verify the safety of char-related functions in str::pattern
 
 - **Status:** Open
-- **Tracking Issue:** [#29](https://github.com/model-checking/verify-rust-std/issues/29)
+- **Tracking Issue:** [#278](https://github.com/model-checking/verify-rust-std/issues/278)
 - **Start date:** *2025-03-07*
 - **End date:** *2025-10-17*
-- **Reward:** *? USD*
+- **Reward:** *5000 USD*
 
 -------------------
 
@@ -12,12 +12,12 @@
 ### Context
 
 A majority portion in str library functions take a Pattern (https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html) as input. 
-The functions which take Pattern as input turn the input str into a kind of `Searcher` which iterates over positions where the Pattern matches, then perform their desired operations (split, find, ...).
+The functions which take Pattern as input turn the input str into a kind of `Searcher` (https://doc.rust-lang.org/std/str/pattern/trait.Searcher.html) which iterates over positions where the Pattern matches, then perform their desired operations (split, find, ...).
 Those functions is implemented in (library/core/src/str/mod.rs), but the core of them is the searching algorithms which are implemented in (library/core/src/str/pattern.rs).
 
 # Details
 
-IMPORTANT NOTE: for this challenge, you can assume: 
+**Important note:** for this challenge, you can assume: 
 1. The safety and functional correctness of all functions in `slice` module 
 2. That all functions in (library/core/src/str/validations.rs) are functionally correct (consistent with the UTF8 encoding description in https://en.wikipedia.org/wiki/UTF-8) . 
 3. That all the Searchers in (library/core/src/str/iter.rs) are created by the into_searcher(_, haystack) with haystack is a valid utf8 string (str). You can assume any utf8 string property of haystack.
@@ -38,7 +38,7 @@ This property should hold for next_back() of `ReverseSearcher` too.
 
 ### Success Criteria
 
-Verify the safety of the following functions in (library/core/src/str/pattern.rs) : `next`, `next_match`, `next_back`, `next_match_back`, `next_reject`, `next_back_reject`
+Verify the safety of the following functions in (library/core/src/str/pattern.rs) : next, next_match, next_back, next_match_back, next_reject, next_back_reject
 which are implemented for `StrSearcher`.
 
 The verification is consider successful if you can specify a condition (a "type invariant") C and prove that:
