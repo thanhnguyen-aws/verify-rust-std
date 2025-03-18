@@ -1,4 +1,4 @@
-# Challenge 21: Verify the safety of char-related functions in str::pattern
+# Challenge 21: Verify the safety of substring-related functions in str::pattern
 
 - **Status:** Open
 - **Tracking Issue:** [#278](https://github.com/model-checking/verify-rust-std/issues/278)
