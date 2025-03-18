@@ -14,10 +14,10 @@
 Verify the safety of [`std::str`] functions that are defined in (library/core/src/str/iter.rs):
 
 **Important note:** for this challenge, you can assume: 
-1. The safety and functional correctness of all functions in `slice` module 
-2. The safety and functional correctness of all functions in (library/core/src/str/pattern.rs)
+1. The safety and functional correctness of all functions in `slice` module. 
+2. The safety and functional correctness of all functions in (library/core/src/str/pattern.rs).
 3. That all functions in (library/core/src/str/validations.rs) are functionally correct (consistent with the UTF8 encoding description in https://en.wikipedia.org/wiki/UTF-8). 
-4. That all the Iterators in (library/core/src/str/iter.rs) are derived from a valid utf8 string (str) (You can assume any property of valid utf8 encoded string)
+4. That all the Iterators in (library/core/src/str/iter.rs) are derived from a valid utf8 string (str) (You can assume any property of valid utf8 encoded string).
 
 
 ### Success Criteria
