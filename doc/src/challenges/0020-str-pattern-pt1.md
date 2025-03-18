@@ -13,7 +13,7 @@
 
 A majority portion in str library functions take a Pattern (https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html) as input. 
 The functions which take Pattern as input turn the input str into a kind of Searcher which iterates over positions where the Pattern match, then perform their desired operations (split, find, ...).
-Those functions is implemented in (library/core/src/str/mod.rs), but the core of them is the searching algorithms which are implemented in (library/core/src/str/pattern.rs).
+Those functions are implemented in (library/core/src/str/mod.rs), but the core of them is the searching algorithms which are implemented in (library/core/src/str/pattern.rs).
 
 # Details
 
