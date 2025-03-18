@@ -1,17 +1,17 @@
 # Challenge 25: Verify the safety of `VecDeque` functions
 
 - **Status:** Open
-- **Tracking Issue:** [#29](https://github.com/model-checking/verify-rust-std/issues/29)
+- **Tracking Issue:** [#286](https://github.com/model-checking/verify-rust-std/issues/286)
 - **Start date:** *2025-03-07*
 - **End date:** *2025-10-17*
-- **Reward:** *?*
+- **Reward:** *5000 USD*
 
 -------------------
 
 
 ## Goal
 
-Verify the safety of [`VecDeque`] functions in (library/alloc/src/collections/vec_deque/mod.rs).
+Verify the safety of `VecDeque` functions in (library/alloc/src/collections/vec_deque/mod.rs).
 
 
 ### Success Criteria
