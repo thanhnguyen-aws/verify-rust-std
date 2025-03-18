@@ -26,7 +26,7 @@ Verify the safety of the functions in (library/core/src/str/pattern.rs) listed i
 
 The safety properties we are targeting are: 
 1. There is no UB happens when calling the functions after the Searcher is created.
-2. The impls of unsafe traits `Searcher` and `ReverseSearcher` satisfies the SAFETY condition stated in the file: 
+2. The impls of unsafe traits `Searcher` and `ReverseSearcher` satisfy the SAFETY condition stated in the file: 
 ```
 /// The trait is marked unsafe because the indices returned by the
 /// [`next()`][Searcher::next] methods are required to lie on valid utf8
