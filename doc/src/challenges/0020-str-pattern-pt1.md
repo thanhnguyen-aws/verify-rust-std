@@ -19,7 +19,7 @@ Those functions is implemented in (library/core/src/str/mod.rs), but the core of
 
 IMPORTANT NOTE: for this challenge, you can assume: 
 1. The safety and functional correctness of all functions in `slice` module 
-2. That all functions in (library/core/src/str/validations.rs) are functionally correct (consistent with the UTF8 encoding description in https://en.wikipedia.org/wiki/UTF-8) . 
+2. That all functions in (library/core/src/str/validations.rs) are functionally correct (consistent with the UTF8 encoding description in https://en.wikipedia.org/wiki/UTF-8). 
 3. That all the Searchers in (library/core/src/str/iter.rs) are created by the into_searcher(_, haystack) with haystack is a valid utf8 string (str). You can assume any utf8 string property of haystack.
 
 Verify the safety of the functions in (library/core/src/str/pattern.rs) listed in the next section.
