@@ -1,17 +1,17 @@
 # Challenge 17: Verify the safety of `slice` functions
 
 - **Status:** Open
-- **Tracking Issue:** [#29](https://github.com/model-checking/verify-rust-std/issues/29)
+- **Tracking Issue:** [#281](https://github.com/model-checking/verify-rust-std/issues/281)
 - **Start date:** *2025-03-07*
 - **End date:** *2025-10-17*
-- **Reward:** *?*
+- **Reward:** *5000 USD*
 
 -------------------
 
 
 ## Goal
 
-Verify the safety of [`std::slice`] functions in (library/core/src/slice/mod.rs).
+Verify the safety of `std::slice` functions in (library/core/src/slice/mod.rs).
 
 
 ### Success Criteria
