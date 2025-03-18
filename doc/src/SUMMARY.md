@@ -38,4 +38,4 @@
   - [22: Verify the safety of str iter functions](./challenges/0022-str-iter.md)
   - [23: Verify the safety of Vec functions part 1](./challenges/0023-vec-pt1.md)
   - [24: Verify the safety of Vec functions part 2](./challenges/0024-vec-pt2.md)
-  - [26: Verify the safety of `VecDeque` functions](./challenges/0025-vecdeque.md)
+  - [25: Verify the safety of `VecDeque` functions](./challenges/0025-vecdeque.md)
