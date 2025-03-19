@@ -18,14 +18,14 @@ Those functions are implemented in (library/core/src/str/mod.rs), but the core o
 # Details
 
 **Important note:** for this challenge, you can assume: 
-1. The safety and functional correctness of all functions in `slice` module 
+1. The safety and functional correctness of all functions in `slice` module.
 2. That all functions in (library/core/src/str/validations.rs) are functionally correct (consistent with the UTF8 encoding description in https://en.wikipedia.org/wiki/UTF-8). 
 3. That all the Searchers in (library/core/src/str/iter.rs) are created by the into_searcher(_, haystack) with haystack being a valid utf8 string (str). You can assume any utf8 string property of haystack.
 
 Verify the safety of the functions in (library/core/src/str/pattern.rs) listed in the next section.
 
 The safety properties we are targeting are: 
-1. No UB occurs when calling the functions after the Searcher is created.
+1. No undefined behavior occurs when calling the functions after the Searcher is created.
 2. The impls of unsafe traits `Searcher` and `ReverseSearcher` satisfy the SAFETY condition stated in the file: 
 ```
 /// The trait is marked unsafe because the indices returned by the
@@ -41,7 +41,7 @@ This property should hold for next_back() of `ReverseSearcher` too.
 Verify the safety of the following functions in (library/core/src/str/pattern.rs) : next, next_match, next_back, next_match_back, next_reject, next_back_reject
 which are implemented for the following `Searcher`s:  CharSearcher, MultiCharEqSearcher, CharArraySearcher , CharArrayRefSearcher, CharSliceSearcher, CharPredicateSearcher.
 
-The verification is consider successful if for each `Searcher` above, you can specify a condition (a "type invariant") C and prove that:
+The verification is considered successful if for each `Searcher` above, you can specify a condition (a "type invariant") C and prove that:
 1. If the `Searcher` is created from any valid utf8 haystack, it satisfies C.
 2. If the `Searcher` satisfies C, it ensures the two safety properties mentioned in the previous section.
 3. If the `Searcher` satisfies C, after it calls any function above and gets modified, it still statisfies C.
