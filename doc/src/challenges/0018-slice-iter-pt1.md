@@ -55,10 +55,6 @@ Prove absence of undefined behaviors of following safe functions that contain un
 |last| 
 |fold| 
 |for_each| 
-|all| 
-|any| 
-|find| 
-|find_map| 
 |position| 
 |rposition| 
 |next_back| 
