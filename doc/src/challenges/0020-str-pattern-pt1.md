@@ -11,7 +11,9 @@
 
 ### Context
 
-A majority portion in str library functions are generic over the `Pattern` trait (https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html). 
+The following str library functions are generic over the `Pattern` trait (https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html): 
+contains, starts_with, ends_with, find, rfind, split, split_inclusive, rsplit, split_terminator, rsplit_terminator, splitn, rsplitn, split_once, rsplit_once, rmatches, match_indices, rmatch_indices, trim_matches, trim_start_matches,
+strip_prefix, strip_suffix, trim_end_matches.
 The functions which take Pattern as input turn the input str into a kind of `Searcher` (https://doc.rust-lang.org/std/str/pattern/trait.Searcher.html)  which iterates over positions where the Pattern match, then perform their desired operations (split, find, ...).
 Those functions are implemented in (library/core/src/str/mod.rs), but the core of them is the searching algorithms which are implemented in (library/core/src/str/pattern.rs).
 
@@ -46,6 +48,7 @@ The verification is considered successful if for each `Searcher` above, you can 
 2. If the `Searcher` satisfies C, it ensures the two safety properties mentioned in the previous section.
 3. If the `Searcher` satisfies C, after it calls any function above and gets modified, it still statisfies C.
 
+Furthermore, you must prove the absence of undefined behaviors listed in the next section.
 
 The verification must be unbounded---it must hold for inputs of arbitrary size.
 
