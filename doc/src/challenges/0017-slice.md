@@ -20,6 +20,21 @@ The safety of the following functions in (library/core/src/slice/mod.rs):
 
 | Function |
 |---------|
+|get_unchecked| 
+|get_unchecked_mut| 
+|swap_unchecked| 
+|as_chunks_unchecked| 
+|as_chunks_unchecked_mut| 
+|split_at_unchecked| 
+|split_at_mut_unchecked| 
+|align_to|
+|align_to_mut|
+|get_disjoint_unchecked_mut|
+
+The safety of the following functions in (library/core/src/slice/mod.rs):
+
+| Function |
+|---------|
 |first_chunk| 
 |first_chunk_mut| 
 |split_first_chunk|
@@ -28,21 +43,10 @@ The safety of the following functions in (library/core/src/slice/mod.rs):
 |split_last_chunk_mut| 
 |last_chunk| 
 |last_chunk_mut| 
-|get_unchecked| 
-|get_unchecked_mut| 
-|as_ptr_range| 
-|as_mut_ptr_range| 
-|as_array| 
-|as_mut_array| 
-|swap| 
-|swap_unchecked| 
 |reverse| 
-|as_chunks_unchecked| 
 |as_chunks| 
+|as_chunks_mut| 
 |as_rchunks| 
-|as_chunks_unchecked_mut| 
-|split_at_unchecked| 
-|split_at_mut_unchecked| 
 |split_at_checked| 
 |split_at_mut_checked| 
 |binary_search_by| 
@@ -52,12 +56,10 @@ The safety of the following functions in (library/core/src/slice/mod.rs):
 |copy_from_slice|
 |copy_within|
 |swap_with_slice|
-|align_to|
-|align_to_mut|
 |as_simd|
 |as_simd_mut|
-|get_many_unchecked_mut|
-|get_many_mut|
+|get disjioin_mut|
+|get disjioin_check_valid|
 |as_flattened|
 |as_flattened_mut|
 
