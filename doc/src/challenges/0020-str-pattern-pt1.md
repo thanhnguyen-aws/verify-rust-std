@@ -75,10 +75,10 @@ for the following `Searcher`s:
 - `CharSliceSearcher`
 - `CharPredicateSearcher`
 
-The verification is considered successful if for each `Searcher` above, you can specify a condition (a "type invariant") C and prove that:
-1. If the `Searcher` is created from any valid utf8 haystack, it satisfies C.
-2. If the `Searcher` satisfies C, it ensures the two safety properties mentioned in the previous section.
-3. If the `Searcher` satisfies C, after it calls any function above and gets modified, it still statisfies C.
+The verification is considered successful if for each `Searcher` above, you can specify a condition (a "type invariant") `C` and prove that:
+1. If the `Searcher` is created from any valid UTF-8 haystack, it satisfies `C`.
+2. If the `Searcher` satisfies `C`, it ensures the two safety properties mentioned in the previous section.
+3. If the `Searcher` satisfies `C`, after it calls any function above and gets modified, it still satisfies `C`.
 
 Furthermore, you must prove the absence of undefined behaviors listed in the next section.
 
