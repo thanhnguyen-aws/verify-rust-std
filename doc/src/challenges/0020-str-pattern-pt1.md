@@ -60,8 +60,20 @@ This property should hold for next_back() of `ReverseSearcher` too.
 
 ### Success Criteria
 
-Verify the safety of the following functions in (library/core/src/str/pattern.rs) : next, next_match, next_back, next_match_back, next_reject, next_back_reject
-which are implemented for the following `Searcher`s:  CharSearcher, MultiCharEqSearcher, CharArraySearcher , CharArrayRefSearcher, CharSliceSearcher, CharPredicateSearcher.
+Verify the safety of the following functions in (library/core/src/str/pattern.rs) : 
+- `next`
+- `next_match`
+- `next_back`
+- `next_match_back`
+- `next_reject`
+- `next_back_reject`
+for the following `Searcher`s: 
+- `CharSearcher`
+- `MultiCharEqSearcher`
+- `CharArraySearcher`
+- `CharArrayRefSearcher`
+- `CharSliceSearcher`
+- `CharPredicateSearcher`
 
 The verification is considered successful if for each `Searcher` above, you can specify a condition (a "type invariant") C and prove that:
 1. If the `Searcher` is created from any valid utf8 haystack, it satisfies C.
