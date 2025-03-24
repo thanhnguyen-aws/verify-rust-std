@@ -48,10 +48,10 @@ Verify the safety of the following `StrSearcher` functions in (library/core/src/
 - `next_reject`
 - `next_back_reject`
 
-The verification is consider successful if you can specify a condition (a "type invariant") C and prove that:
-1. If the `StrSearcher` is created from any valid utf8 haystack, it satisfies C.
-2. If the `StrSearcher` satisfies C, it ensures the two safety properties mentioned in the previous section.
-3. If the `StrSearcher` satisfies C, after it calls any function above and gets modified, it still statisfies C.
+The verification is considered successful if you can specify a condition (a "type invariant") `C` and prove that:
+1. If the `StrSearcher` is created from any valid UTF-8 haystack, it satisfies `C`.
+2. If the `StrSearcher` satisfies `C`, it ensures the two safety properties mentioned in the previous section.
+3. If the `StrSearcher` satisfies `C`, after it calls any function above and gets modified, it still satisfies `C`.
 
 Furthermore, you must prove the absence of undefined behaviors listed in the next section.
 
