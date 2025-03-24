@@ -4,7 +4,7 @@
 - **Tracking Issue:** [#278](https://github.com/model-checking/verify-rust-std/issues/278)
 - **Start date:** *2025-03-07*
 - **End date:** *2025-10-17*
-- **Reward:** *5000 USD*
+- **Reward:** *10000 USD*
 
 -------------------
 
@@ -12,10 +12,30 @@
 ### Context
 
 The following str library functions are generic over the `Pattern` trait (https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html): 
-contains, starts_with, ends_with, find, rfind, split, split_inclusive, rsplit, split_terminator, rsplit_terminator, splitn, rsplitn, split_once, rsplit_once, rmatches, match_indices, rmatch_indices, trim_matches, trim_start_matches,
-strip_prefix, strip_suffix, trim_end_matches.
-The functions which take Pattern as input turn the input str into a kind of `Searcher` (https://doc.rust-lang.org/std/str/pattern/trait.Searcher.html) which iterates over positions where the Pattern matches, then perform their desired operations (split, find, ...).
-Those functions is implemented in (library/core/src/str/mod.rs), but the core of them is the searching algorithms which are implemented in (library/core/src/str/pattern.rs).
+- `contains`
+- `starts_with`
+- `ends_with`
+- `find` 
+- `rfind`
+- `split`
+- `split_inclusive`
+- `rsplit`
+- `split_terminator`
+- `rsplit_terminator`
+- `splitn`
+- `rsplitn`
+- `split_once`
+- `rsplit_once`
+- `rmatches`
+- `match_indices`
+- `rmatch_indices`
+- `trim_matches`
+- `trim_start_matches`
+- `strip_prefix`
+- `strip_suffix`
+- `trim_end_matches`
+These functions accept a pattern as input, then call [into_searcher](https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html#tymethod.into_searcher) to create a [Searcher](https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html#associatedtype.Searcher) for the pattern. They use this `Searcher` to perform their desired operations (split, find, etc.).
+Those functions are implemented in (library/core/src/str/mod.rs), but the core of them is the searching algorithms which are implemented in (library/core/src/str/pattern.rs).
 
 # Details
 
