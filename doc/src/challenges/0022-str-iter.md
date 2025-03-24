@@ -22,7 +22,7 @@ Verify the safety of [`std::str`] functions that are defined in (library/core/sr
 
 ### Success Criteria
 
-Write and prove the contract for the safety of the following functions:
+Prove the safety of the following safe functions that contain unsafe code:
 
 
 | Function | Impl for |
@@ -42,6 +42,8 @@ Write and prove the contract for the safety of the following functions:
 |next| MatchesInternal|
 |next_back| MatchesInternal|
 |remainder| SplitAsciiWhitespace|
+
+Write and prove the contract for this unsafe function: __iterator_get_unchecked
 
 The verification must be unbounded---it must hold for str of arbitrary length.
 
