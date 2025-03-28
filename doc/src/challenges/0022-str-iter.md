@@ -43,7 +43,7 @@ Prove the safety of the following safe functions that contain unsafe code:
 |next_back| MatchesInternal|
 |remainder| SplitAsciiWhitespace|
 
-Write and prove the contract for this unsafe function: __iterator_get_unchecked
+Write and prove the safety contract for this unsafe function: __iterator_get_unchecked
 
 The verification must be unbounded---it must hold for str of arbitrary length.
 
