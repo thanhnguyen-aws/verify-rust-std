@@ -7,6 +7,8 @@
 - **Reward:** *10000 USD*
 
 -------------------
+## Goal
+Verify the safety of `Searcher` methods in `str::pattern`.
 
 
 ### Context
