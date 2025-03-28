@@ -57,9 +57,6 @@ The safety properties we are targeting are:
 ```
 This property should hold for next_back() of `ReverseSearcher` too.
 
-Although this challenge appears similar to Challenge 20 and only requires proving safety for the `StrSearcher` implementation, 
-it warrants being a separate challenge due to its complexity. 
-The `StrSearcher` implementation relies on sophisticated algorithms - TwoWay-Search and SIMD-search - making the safety proof significantly more complex.
 
 
 ### Success Criteria
