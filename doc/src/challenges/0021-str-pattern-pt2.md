@@ -7,9 +7,14 @@
 - **Reward:** *10000 USD*
 
 -------------------
+## Goal
+Verify the safety of `StrSearcher` implementation in `str::pattern`.
 
+## Motivation
 
-### Context
+String and str types are widely used in Rust programs. Verifying Rust String and str functions in Rust standard library is important in ensuring the safety of these programs.
+
+## Description
 
 The following str library functions are generic over the `Pattern` trait (https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html): 
 - `contains`
@@ -37,7 +42,7 @@ The following str library functions are generic over the `Pattern` trait (https:
 These functions accept a pattern as input, then call [into_searcher](https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html#tymethod.into_searcher) to create a [Searcher](https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html#associatedtype.Searcher) for the pattern. They use this `Searcher` to perform their desired operations (split, find, etc.).
 Those functions are implemented in (library/core/src/str/mod.rs), but the core of them is the searching algorithms which are implemented in (library/core/src/str/pattern.rs).
 
-# Details
+### Assumption
 
 **Important note:** for this challenge, you can assume: 
 1. The safety and functional correctness of all functions in `slice` module. 
