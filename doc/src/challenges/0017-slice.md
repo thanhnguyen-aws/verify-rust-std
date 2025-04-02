@@ -16,7 +16,9 @@ Verify the safety of `std::slice` functions in (library/core/src/slice/mod.rs).
 
 ### Success Criteria
 
-The safety of the following functions in (library/core/src/slice/mod.rs):
+For the following unsafe functions (in library/core/src/slice/mod.rs):
+- Write contracts specifying the safety precondition(s) that the caller must uphold, then
+- Verify that if the caller respects those preconditions, the function does not cause undefined behavior.
 
 | Function |
 |---------|
