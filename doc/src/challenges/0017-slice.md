@@ -33,7 +33,7 @@ For the following unsafe functions (in library/core/src/slice/mod.rs):
 |align_to_mut|
 |get_disjoint_unchecked_mut|
 
-The safety of the following functions in (library/core/src/slice/mod.rs):
+Prove that the following safe abstractions (in library/core/src/slice/mod.rs) do not cause undefined behavior:
 
 | Function |
 |---------|
