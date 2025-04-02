@@ -60,8 +60,8 @@ Prove that the following safe abstractions (in library/core/src/slice/mod.rs) do
 |swap_with_slice|
 |as_simd|
 |as_simd_mut|
-|get disjioin_mut|
-|get disjioin_check_valid|
+|get_disjoint_mut|
+|get_disjoint_check_valid|
 |as_flattened|
 |as_flattened_mut|
 
