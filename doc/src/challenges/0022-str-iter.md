@@ -15,8 +15,7 @@ Verify the safety of [`std::str`] functions that are defined in (library/core/sr
 
 ## Motivation
 
-String and str types are widely used in Rust programs. Verifying Rust String and str functions in Rust standard library is important in ensuring the safety of these programs.
-
+String and `str` types are widely used in Rust programs, so it is important that their associated functions do not cause undefined behavior.
 ## Description
 
 **Important note:** for this challenge, you can assume: 
