@@ -42,7 +42,7 @@ The following str library functions are generic over the `Pattern` trait (https:
 These functions accept a pattern as input, then call [into_searcher](https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html#tymethod.into_searcher) to create a [Searcher](https://doc.rust-lang.org/std/str/pattern/trait.Pattern.html#associatedtype.Searcher) for the pattern. They use this `Searcher` to perform their desired operations (split, find, etc.).
 Those functions are implemented in (library/core/src/str/mod.rs), but the core of them is the searching algorithms which are implemented in (library/core/src/str/pattern.rs).
 
-### Assumption
+### Assumptions
 
 **Important note:** for this challenge, you can assume: 
 1. The safety and functional correctness of all functions in `slice` module. 
