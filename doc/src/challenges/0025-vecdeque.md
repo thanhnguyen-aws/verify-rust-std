@@ -4,7 +4,7 @@
 - **Tracking Issue:** [#286](https://github.com/model-checking/verify-rust-std/issues/286)
 - **Start date:** *2025-03-07*
 - **End date:** *2025-10-17*
-- **Reward:** *5000 USD*
+- **Reward:** *10000 USD*
 
 -------------------
 
@@ -16,7 +16,9 @@ Verify the safety of `VecDeque` functions in (library/alloc/src/collections/vec_
 
 ### Success Criteria
 
-Verify the safety of the following functions in (library/alloc/src/collections/vec_deque/mod.rs).
+Verify the safety of the following functions in (library/alloc/src/collections/vec_deque/mod.rs):
+
+Write and prove the contract for the safety of the following unsafe functions:
 
 | Function |
 |---------|
@@ -28,22 +30,28 @@ Verify the safety of the following functions in (library/alloc/src/collections/v
 |copy_nonoverlapping|
 |wrap_copy|
 |copy_slice|
+|write_iter|
+|write_iter_wrapping|
 |handle_capacity_increase|
 |from_contiguous_raw_parts_in|
+|abort_shrink|
+
+Prove the absence of undefined behavior for following safe abstractions:
+
 |get|
 |get_mut|
 |swap|
-|capacity|
 |reserve_exact|
 |reserve|
 |try_reserve_exact|
 |try_reserve|
 |shrink_to|
-|abort_shrink|
+|truncate|
 |as_slices|
 |as_mut_slices|
 |range|
 |range_mut|
+|drain|
 |pop_front|
 |pop_back|
 |push_front|
@@ -52,7 +60,9 @@ Verify the safety of the following functions in (library/alloc/src/collections/v
 |remove|
 |split_off|
 |append|
+|retain_mut|
 |grow|
+|resize_with|
 |make_contiguous|
 |rotate_left|
 |rotate_right|
