@@ -12,7 +12,7 @@ Verify the safety of char-related `Searcher` methods in `str::pattern`.
 
 ## Motivation
 
-String and str types are widely used in Rust programs. Verifying Rust String and str functions in Rust standard library is important in ensuring the safety of these programs.
+String and `str` types are widely used in Rust programs, so it is important that their associated functions do not cause undefined behavior.
 
 ## Description
 
