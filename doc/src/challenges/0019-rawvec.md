@@ -15,7 +15,7 @@ Verify the safety of `RawVec` functions in (library/alloc/src/raw_vec/mod.rs).
 
 ## Motivation 
 
-`RawVec` is the type of `Vec` and `VecDeque` main component: the buffer. Therefore, the safety of the functions of `Vec` and `VecDeque`  depend on these of ``RawVec`.
+`RawVec` is the type of the main component of both `Vec` and `VecDeque`: the buffer. Therefore, the safety of the functions of `Vec` and `VecDeque` depend on the safety of `RawVec`.
 
 ### Success Criteria
 
