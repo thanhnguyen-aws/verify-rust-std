@@ -20,7 +20,7 @@ use crate::num::FpCategory;
 use crate::panic::const_assert;
 #[allow(unused_imports)]
 use crate::ub_checks::float_to_int_in_range;
-use crate::{intrinsics, mem};
+use crate::{cfg_match, intrinsics, mem};
 
 /// The radix or base of the internal representation of `f32`.
 /// Use [`f32::RADIX`] instead.
@@ -476,14 +476,16 @@ impl f32 {
 
     /// Not a Number (NaN).
     ///
-    /// Note that IEEE 754 doesn't define just a single NaN value;
-    /// a plethora of bit patterns are considered to be NaN.
-    /// Furthermore, the standard makes a difference
-    /// between a "signaling" and a "quiet" NaN,
-    /// and allows inspecting its "payload" (the unspecified bits in the bit pattern).
-    /// This constant isn't guaranteed to equal to any specific NaN bitpattern,
-    /// and the stability of its representation over Rust versions
-    /// and target platforms isn't guaranteed.
+    /// Note that IEEE 754 doesn't define just a single NaN value; a plethora of bit patterns are
+    /// considered to be NaN. Furthermore, the standard makes a difference between a "signaling" and
+    /// a "quiet" NaN, and allows inspecting its "payload" (the unspecified bits in the bit pattern)
+    /// and its sign. See the [specification of NaN bit patterns](f32#nan-bit-patterns) for more
+    /// info.
+    ///
+    /// This constant is guaranteed to be a quiet NaN (on targets that follow the Rust assumptions
+    /// that the quiet/signaling bit being set to 1 indicates a quiet NaN). Beyond that, nothing is
+    /// guaranteed about the specific bit pattern chosen here: both payload and sign are arbitrary.
+    /// The concrete bit pattern may change across Rust versions and target platforms.
     #[stable(feature = "assoc_int_consts", since = "1.43.0")]
     #[rustc_diagnostic_item = "f32_nan"]
     #[allow(clippy::eq_op)]
@@ -1002,21 +1004,22 @@ impl f32 {
     #[stable(feature = "num_midpoint", since = "1.85.0")]
     #[rustc_const_stable(feature = "num_midpoint", since = "1.85.0")]
     pub const fn midpoint(self, other: f32) -> f32 {
-        cfg_if! {
+        cfg_match! {
             // Allow faster implementation that have known good 64-bit float
             // implementations. Falling back to the branchy code on targets that don't
             // have 64-bit hardware floats or buggy implementations.
             // https://github.com/rust-lang/rust/pull/121062#issuecomment-2123408114
-            if #[cfg(any(
-                    target_arch = "x86_64",
-                    target_arch = "aarch64",
-                    all(any(target_arch = "riscv32", target_arch = "riscv64"), target_feature = "d"),
-                    all(target_arch = "arm", target_feature = "vfp2"),
-                    target_arch = "wasm32",
-                    target_arch = "wasm64",
-                ))] {
+            any(
+                target_arch = "x86_64",
+                target_arch = "aarch64",
+                all(any(target_arch = "riscv32", target_arch = "riscv64"), target_feature = "d"),
+                all(target_arch = "arm", target_feature = "vfp2"),
+                target_arch = "wasm32",
+                target_arch = "wasm64",
+            ) => {
                 ((self as f64 + other as f64) / 2.0) as f32
-            } else {
+            }
+            _ => {
                 const LO: f32 = f32::MIN_POSITIVE * 2.;
                 const HI: f32 = f32::MAX / 2.;
 
@@ -1510,5 +1513,55 @@ impl f32 {
     pub const fn copysign(self, sign: f32) -> f32 {
         // SAFETY: this is actually a safe intrinsic
         unsafe { intrinsics::copysignf32(self, sign) }
+    }
+
+    /// Float addition that allows optimizations based on algebraic rules.
+    ///
+    /// See [algebraic operators](primitive@f32#algebraic-operators) for more info.
+    #[must_use = "method returns a new number and does not mutate the original value"]
+    #[unstable(feature = "float_algebraic", issue = "136469")]
+    #[inline]
+    pub fn algebraic_add(self, rhs: f32) -> f32 {
+        intrinsics::fadd_algebraic(self, rhs)
+    }
+
+    /// Float subtraction that allows optimizations based on algebraic rules.
+    ///
+    /// See [algebraic operators](primitive@f32#algebraic-operators) for more info.
+    #[must_use = "method returns a new number and does not mutate the original value"]
+    #[unstable(feature = "float_algebraic", issue = "136469")]
+    #[inline]
+    pub fn algebraic_sub(self, rhs: f32) -> f32 {
+        intrinsics::fsub_algebraic(self, rhs)
+    }
+
+    /// Float multiplication that allows optimizations based on algebraic rules.
+    ///
+    /// See [algebraic operators](primitive@f32#algebraic-operators) for more info.
+    #[must_use = "method returns a new number and does not mutate the original value"]
+    #[unstable(feature = "float_algebraic", issue = "136469")]
+    #[inline]
+    pub fn algebraic_mul(self, rhs: f32) -> f32 {
+        intrinsics::fmul_algebraic(self, rhs)
+    }
+
+    /// Float division that allows optimizations based on algebraic rules.
+    ///
+    /// See [algebraic operators](primitive@f32#algebraic-operators) for more info.
+    #[must_use = "method returns a new number and does not mutate the original value"]
+    #[unstable(feature = "float_algebraic", issue = "136469")]
+    #[inline]
+    pub fn algebraic_div(self, rhs: f32) -> f32 {
+        intrinsics::fdiv_algebraic(self, rhs)
+    }
+
+    /// Float remainder that allows optimizations based on algebraic rules.
+    ///
+    /// See [algebraic operators](primitive@f32#algebraic-operators) for more info.
+    #[must_use = "method returns a new number and does not mutate the original value"]
+    #[unstable(feature = "float_algebraic", issue = "136469")]
+    #[inline]
+    pub fn algebraic_rem(self, rhs: f32) -> f32 {
+        intrinsics::frem_algebraic(self, rhs)
     }
 }
