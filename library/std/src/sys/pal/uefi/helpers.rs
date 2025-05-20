@@ -22,7 +22,7 @@ use crate::os::uefi::{self};
 use crate::path::Path;
 use crate::ptr::NonNull;
 use crate::slice;
-use crate::sync::atomic::{AtomicPtr, Ordering};
+use crate::sync::atomic::{Atomic, AtomicPtr, Ordering};
 use crate::sys_common::wstr::WStrUnits;
 
 type BootInstallMultipleProtocolInterfaces =
@@ -120,39 +120,6 @@ pub(crate) fn open_protocol<T>(
     }
 }
 
-pub(crate) fn create_event(
-    signal: u32,
-    tpl: efi::Tpl,
-    handler: Option<efi::EventNotify>,
-    context: *mut crate::ffi::c_void,
-) -> io::Result<NonNull<crate::ffi::c_void>> {
-    let boot_services: NonNull<efi::BootServices> =
-        boot_services().ok_or(BOOT_SERVICES_UNAVAILABLE)?.cast();
-    let mut event: r_efi::efi::Event = crate::ptr::null_mut();
-    let r = unsafe {
-        let create_event = (*boot_services.as_ptr()).create_event;
-        (create_event)(signal, tpl, handler, context, &mut event)
-    };
-    if r.is_error() {
-        Err(crate::io::Error::from_raw_os_error(r.as_usize()))
-    } else {
-        NonNull::new(event).ok_or(const_error!(io::ErrorKind::Other, "null protocol"))
-    }
-}
-
-/// # SAFETY
-/// - The supplied event must be valid
-pub(crate) unsafe fn close_event(evt: NonNull<crate::ffi::c_void>) -> io::Result<()> {
-    let boot_services: NonNull<efi::BootServices> =
-        boot_services().ok_or(BOOT_SERVICES_UNAVAILABLE)?.cast();
-    let r = unsafe {
-        let close_event = (*boot_services.as_ptr()).close_event;
-        (close_event)(evt.as_ptr())
-    };
-
-    if r.is_error() { Err(crate::io::Error::from_raw_os_error(r.as_usize())) } else { Ok(()) }
-}
-
 /// Gets the Protocol for current system handle.
 ///
 /// Note: Some protocols need to be manually freed. It is the caller's responsibility to do so.
@@ -190,7 +157,7 @@ pub(crate) fn device_path_to_text(path: NonNull<device_path::Protocol>) -> io::R
         Ok(path)
     }
 
-    static LAST_VALID_HANDLE: AtomicPtr<crate::ffi::c_void> =
+    static LAST_VALID_HANDLE: Atomic<*mut crate::ffi::c_void> =
         AtomicPtr::new(crate::ptr::null_mut());
 
     if let Some(handle) = NonNull::new(LAST_VALID_HANDLE.load(Ordering::Acquire)) {
@@ -302,7 +269,7 @@ impl OwnedDevicePath {
                 .ok_or_else(|| const_error!(io::ErrorKind::InvalidFilename, "invalid Device Path"))
         }
 
-        static LAST_VALID_HANDLE: AtomicPtr<crate::ffi::c_void> =
+        static LAST_VALID_HANDLE: Atomic<*mut crate::ffi::c_void> =
             AtomicPtr::new(crate::ptr::null_mut());
 
         if let Some(handle) = NonNull::new(LAST_VALID_HANDLE.load(Ordering::Acquire)) {
@@ -374,7 +341,6 @@ impl<'a> BorrowedDevicePath<'a> {
         device_path_to_text(self.protocol)
     }
 
-    #[expect(dead_code)]
     pub(crate) const fn iter(&'a self) -> DevicePathIterator<'a> {
         DevicePathIterator::new(DevicePathNode::new(self.protocol))
     }
@@ -452,7 +418,6 @@ impl<'a> DevicePathNode<'a> {
             && self.sub_type() == r_efi::protocols::device_path::End::SUBTYPE_ENTIRE
     }
 
-    #[expect(dead_code)]
     pub(crate) const fn is_end_instance(&self) -> bool {
         self.node_type() == r_efi::protocols::device_path::TYPE_END
             && self.sub_type() == r_efi::protocols::device_path::End::SUBTYPE_INSTANCE
@@ -468,7 +433,6 @@ impl<'a> DevicePathNode<'a> {
         Self::new(node)
     }
 
-    #[expect(dead_code)]
     pub(crate) fn to_path(&'a self) -> BorrowedDevicePath<'a> {
         BorrowedDevicePath::new(self.protocol)
     }
@@ -642,7 +606,7 @@ pub(crate) fn os_string_to_raw(s: &OsStr) -> Option<Box<[r_efi::efi::Char16]>> {
 }
 
 pub(crate) fn open_shell() -> Option<NonNull<shell::Protocol>> {
-    static LAST_VALID_HANDLE: AtomicPtr<crate::ffi::c_void> =
+    static LAST_VALID_HANDLE: Atomic<*mut crate::ffi::c_void> =
         AtomicPtr::new(crate::ptr::null_mut());
 
     if let Some(handle) = NonNull::new(LAST_VALID_HANDLE.load(Ordering::Acquire)) {
@@ -734,6 +698,59 @@ impl Drop for ServiceProtocol {
             // SAFETY: Child handle must be allocated by the current service binding protocol.
             let _ = unsafe {
                 ((*sbp.as_ptr()).destroy_child)(sbp.as_ptr(), self.child_handle.as_ptr())
+            };
+        }
+    }
+}
+
+#[repr(transparent)]
+pub(crate) struct OwnedEvent(NonNull<crate::ffi::c_void>);
+
+impl OwnedEvent {
+    pub(crate) fn new(
+        signal: u32,
+        tpl: efi::Tpl,
+        handler: Option<efi::EventNotify>,
+        context: Option<NonNull<crate::ffi::c_void>>,
+    ) -> io::Result<Self> {
+        let boot_services: NonNull<efi::BootServices> =
+            boot_services().ok_or(BOOT_SERVICES_UNAVAILABLE)?.cast();
+        let mut event: r_efi::efi::Event = crate::ptr::null_mut();
+        let context = context.map(NonNull::as_ptr).unwrap_or(crate::ptr::null_mut());
+
+        let r = unsafe {
+            let create_event = (*boot_services.as_ptr()).create_event;
+            (create_event)(signal, tpl, handler, context, &mut event)
+        };
+
+        if r.is_error() {
+            Err(crate::io::Error::from_raw_os_error(r.as_usize()))
+        } else {
+            NonNull::new(event)
+                .ok_or(const_error!(io::ErrorKind::Other, "failed to create event"))
+                .map(Self)
+        }
+    }
+
+    pub(crate) fn into_raw(self) -> *mut crate::ffi::c_void {
+        let r = self.0.as_ptr();
+        crate::mem::forget(self);
+        r
+    }
+
+    /// SAFETY: Assumes that ptr is a non-null valid UEFI event
+    pub(crate) unsafe fn from_raw(ptr: *mut crate::ffi::c_void) -> Self {
+        Self(unsafe { NonNull::new_unchecked(ptr) })
+    }
+}
+
+impl Drop for OwnedEvent {
+    fn drop(&mut self) {
+        if let Some(boot_services) = boot_services() {
+            let bt: NonNull<r_efi::efi::BootServices> = boot_services.cast();
+            unsafe {
+                let close_event = (*bt.as_ptr()).close_event;
+                (close_event)(self.0.as_ptr())
             };
         }
     }

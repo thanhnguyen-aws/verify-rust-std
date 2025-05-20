@@ -390,7 +390,8 @@ impl<T: ?Sized> *const T {
     /// * If the computed offset is non-zero, then `self` must be [derived from][crate::ptr#provenance] a pointer to some
     ///   [allocated object], and the entire memory range between `self` and the result must be in
     ///   bounds of that allocated object. In particular, this range must not "wrap around" the edge
-    ///   of the address space.
+    ///   of the address space. Note that "range" here refers to a half-open range as usual in Rust,
+    ///   i.e., `self..result` for non-negative offsets and `result..self` for negative offsets.
     ///
     /// Allocated objects can never be larger than `isize::MAX` bytes, so if the computed offset
     /// stays in bounds of the allocated object, it is guaranteed to satisfy the first requirement.
@@ -510,8 +511,9 @@ impl<T: ?Sized> *const T {
     ///
     /// This operation itself is always safe, but using the resulting pointer is not.
     ///
-    /// The resulting pointer "remembers" the [allocated object] that `self` points to; it must not
-    /// be used to read or write other allocated objects.
+    /// The resulting pointer "remembers" the [allocated object] that `self` points to
+    /// (this is called "[Provenance](ptr/index.html#provenance)").
+    /// The pointer must not be used to read or write other allocated objects.
     ///
     /// In other words, `let z = x.wrapping_offset((y as isize) - (x as isize))` does *not* make `z`
     /// the same as `y` even if we assume `T` has size `1` and there is no overflow: `z` is still
@@ -810,8 +812,8 @@ impl<T: ?Sized> *const T {
     /// // This would be incorrect, as the pointers are not correctly ordered:
     /// // ptr1.offset_from_unsigned(ptr2)
     /// ```
-    #[stable(feature = "ptr_sub_ptr", since = "CURRENT_RUSTC_VERSION")]
-    #[rustc_const_stable(feature = "const_ptr_sub_ptr", since = "CURRENT_RUSTC_VERSION")]
+    #[stable(feature = "ptr_sub_ptr", since = "1.87.0")]
+    #[rustc_const_stable(feature = "const_ptr_sub_ptr", since = "1.87.0")]
     #[inline]
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     pub const unsafe fn offset_from_unsigned(self, origin: *const T) -> usize
@@ -850,17 +852,17 @@ impl<T: ?Sized> *const T {
     /// units of **bytes**.
     ///
     /// This is purely a convenience for casting to a `u8` pointer and
-    /// using [`sub_ptr`][pointer::offset_from_unsigned] on it. See that method for
-    /// documentation and safety requirements.
+    /// using [`offset_from_unsigned`][pointer::offset_from_unsigned] on it.
+    /// See that method for documentation and safety requirements.
     ///
     /// For non-`Sized` pointees this operation considers only the data pointers,
     /// ignoring the metadata.
-    #[stable(feature = "ptr_sub_ptr", since = "CURRENT_RUSTC_VERSION")]
-    #[rustc_const_stable(feature = "const_ptr_sub_ptr", since = "CURRENT_RUSTC_VERSION")]
+    #[stable(feature = "ptr_sub_ptr", since = "1.87.0")]
+    #[rustc_const_stable(feature = "const_ptr_sub_ptr", since = "1.87.0")]
     #[inline]
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     pub const unsafe fn byte_offset_from_unsigned<U: ?Sized>(self, origin: *const U) -> usize {
-        // SAFETY: the caller must uphold the safety contract for `sub_ptr`.
+        // SAFETY: the caller must uphold the safety contract for `offset_from_unsigned`.
         unsafe { self.cast::<u8>().offset_from_unsigned(origin.cast::<u8>()) }
     }
 
@@ -1848,6 +1850,14 @@ impl<T: ?Sized> PartialOrd for *const T {
     }
 }
 
+#[stable(feature = "raw_ptr_default", since = "CURRENT_RUSTC_VERSION")]
+impl<T: ?Sized + Thin> Default for *const T {
+    /// Returns the default value of [`null()`][crate::ptr::null].
+    fn default() -> Self {
+        crate::ptr::null()
+    }
+}
+
 #[cfg(kani)]
 #[unstable(feature = "kani", issue = "none")]
 mod verify {
@@ -2605,7 +2615,7 @@ mod verify {
     gen_const_byte_arith_harness_for_dyn!(byte_sub, check_const_byte_sub_dyn);
     gen_const_byte_arith_harness_for_dyn!(byte_offset, check_const_byte_offset_dyn);
 
-    // Proof for contact of byte_offset_from to verify unit type
+    // Proof for contract of byte_offset_from to verify unit type
     #[kani::proof_for_contract(<*const ()>::byte_offset_from)]
     pub fn check_const_byte_offset_from_unit() {
         let val: () = ();
