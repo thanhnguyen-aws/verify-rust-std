@@ -14,15 +14,13 @@
 use safety::requires;
 
 use crate::convert::FloatToInt;
-#[cfg(not(test))]
-use crate::intrinsics;
 #[cfg(kani)]
 use crate::kani;
-use crate::mem;
 use crate::num::FpCategory;
 use crate::panic::const_assert;
 #[allow(unused_imports)]
 use crate::ub_checks::float_to_int_in_range;
+use crate::{cfg_match, intrinsics, mem};
 
 /// The radix or base of the internal representation of `f32`.
 /// Use [`f32::RADIX`] instead.
@@ -392,13 +390,15 @@ pub mod consts {
     pub const LN_10: f32 = 2.30258509299404568401799145468436421_f32;
 }
 
-#[cfg(not(test))]
 impl f32 {
     /// The radix or base of the internal representation of `f32`.
     #[stable(feature = "assoc_int_consts", since = "1.43.0")]
     pub const RADIX: u32 = 2;
 
     /// Number of significant digits in base 2.
+    ///
+    /// Note that the size of the mantissa in the bitwise representation is one
+    /// smaller than this since the leading 1 is not stored explicitly.
     #[stable(feature = "assoc_int_consts", since = "1.43.0")]
     pub const MANTISSA_DIGITS: u32 = 24;
 
@@ -422,7 +422,7 @@ impl f32 {
     /// [Machine epsilon]: https://en.wikipedia.org/wiki/Machine_epsilon
     /// [`MANTISSA_DIGITS`]: f32::MANTISSA_DIGITS
     #[stable(feature = "assoc_int_consts", since = "1.43.0")]
-    #[cfg_attr(not(test), rustc_diagnostic_item = "f32_epsilon")]
+    #[rustc_diagnostic_item = "f32_epsilon"]
     pub const EPSILON: f32 = 1.19209290e-07_f32;
 
     /// Smallest finite `f32` value.
@@ -449,16 +449,22 @@ impl f32 {
     #[stable(feature = "assoc_int_consts", since = "1.43.0")]
     pub const MAX: f32 = 3.40282347e+38_f32;
 
-    /// One greater than the minimum possible normal power of 2 exponent.
+    /// One greater than the minimum possible *normal* power of 2 exponent
+    /// for a significand bounded by 1 ≤ x < 2 (i.e. the IEEE definition).
     ///
-    /// If <i>x</i>&nbsp;=&nbsp;`MIN_EXP`, then normal numbers
-    /// ≥&nbsp;0.5&nbsp;×&nbsp;2<sup><i>x</i></sup>.
+    /// This corresponds to the exact minimum possible *normal* power of 2 exponent
+    /// for a significand bounded by 0.5 ≤ x < 1 (i.e. the C definition).
+    /// In other words, all normal numbers representable by this type are
+    /// greater than or equal to 0.5&nbsp;×&nbsp;2<sup><i>MIN_EXP</i></sup>.
     #[stable(feature = "assoc_int_consts", since = "1.43.0")]
     pub const MIN_EXP: i32 = -125;
-    /// Maximum possible power of 2 exponent.
+    /// One greater than the maximum possible power of 2 exponent
+    /// for a significand bounded by 1 ≤ x < 2 (i.e. the IEEE definition).
     ///
-    /// If <i>x</i>&nbsp;=&nbsp;`MAX_EXP`, then normal numbers
-    /// &lt;&nbsp;1&nbsp;×&nbsp;2<sup><i>x</i></sup>.
+    /// This corresponds to the exact maximum possible power of 2 exponent
+    /// for a significand bounded by 0.5 ≤ x < 1 (i.e. the C definition).
+    /// In other words, all numbers representable by this type are
+    /// strictly less than 2<sup><i>MAX_EXP</i></sup>.
     #[stable(feature = "assoc_int_consts", since = "1.43.0")]
     pub const MAX_EXP: i32 = 128;
 
@@ -479,14 +485,16 @@ impl f32 {
 
     /// Not a Number (NaN).
     ///
-    /// Note that IEEE 754 doesn't define just a single NaN value;
-    /// a plethora of bit patterns are considered to be NaN.
-    /// Furthermore, the standard makes a difference
-    /// between a "signaling" and a "quiet" NaN,
-    /// and allows inspecting its "payload" (the unspecified bits in the bit pattern).
-    /// This constant isn't guaranteed to equal to any specific NaN bitpattern,
-    /// and the stability of its representation over Rust versions
-    /// and target platforms isn't guaranteed.
+    /// Note that IEEE 754 doesn't define just a single NaN value; a plethora of bit patterns are
+    /// considered to be NaN. Furthermore, the standard makes a difference between a "signaling" and
+    /// a "quiet" NaN, and allows inspecting its "payload" (the unspecified bits in the bit pattern)
+    /// and its sign. See the [specification of NaN bit patterns](f32#nan-bit-patterns) for more
+    /// info.
+    ///
+    /// This constant is guaranteed to be a quiet NaN (on targets that follow the Rust assumptions
+    /// that the quiet/signaling bit being set to 1 indicates a quiet NaN). Beyond that, nothing is
+    /// guaranteed about the specific bit pattern chosen here: both payload and sign are arbitrary.
+    /// The concrete bit pattern may change across Rust versions and target platforms.
     #[stable(feature = "assoc_int_consts", since = "1.43.0")]
     #[rustc_diagnostic_item = "f32_nan"]
     #[allow(clippy::eq_op)]
@@ -499,13 +507,13 @@ impl f32 {
     pub const NEG_INFINITY: f32 = -1.0_f32 / 0.0_f32;
 
     /// Sign bit
-    const SIGN_MASK: u32 = 0x8000_0000;
+    pub(crate) const SIGN_MASK: u32 = 0x8000_0000;
 
     /// Exponent mask
-    const EXP_MASK: u32 = 0x7f80_0000;
+    pub(crate) const EXP_MASK: u32 = 0x7f80_0000;
 
     /// Mantissa mask
-    const MAN_MASK: u32 = 0x007f_ffff;
+    pub(crate) const MAN_MASK: u32 = 0x007f_ffff;
 
     /// Minimum representable positive value (min subnormal)
     const TINY_BITS: u32 = 0x1;
@@ -714,8 +722,7 @@ impl f32 {
     pub const fn is_sign_negative(self) -> bool {
         // IEEE754 says: isSignMinus(x) is true if and only if x has negative sign. isSignMinus
         // applies to zeros and NaNs as well.
-        // SAFETY: This is just transmuting to get the sign bit, it's fine.
-        unsafe { mem::transmute::<f32, u32>(self) & 0x8000_0000 != 0 }
+        self.to_bits() & 0x8000_0000 != 0
     }
 
     /// Returns the least number greater than `self`.
@@ -747,8 +754,8 @@ impl f32 {
     /// [`MAX`]: Self::MAX
     #[inline]
     #[doc(alias = "nextUp")]
-    #[stable(feature = "float_next_up_down", since = "CURRENT_RUSTC_VERSION")]
-    #[rustc_const_stable(feature = "float_next_up_down", since = "CURRENT_RUSTC_VERSION")]
+    #[stable(feature = "float_next_up_down", since = "1.86.0")]
+    #[rustc_const_stable(feature = "float_next_up_down", since = "1.86.0")]
     pub const fn next_up(self) -> Self {
         // Some targets violate Rust's assumption of IEEE semantics, e.g. by flushing
         // denormals to zero. This is in general unsound and unsupported, but here
@@ -798,8 +805,8 @@ impl f32 {
     /// [`MAX`]: Self::MAX
     #[inline]
     #[doc(alias = "nextDown")]
-    #[stable(feature = "float_next_up_down", since = "CURRENT_RUSTC_VERSION")]
-    #[rustc_const_stable(feature = "float_next_up_down", since = "CURRENT_RUSTC_VERSION")]
+    #[stable(feature = "float_next_up_down", since = "1.86.0")]
+    #[rustc_const_stable(feature = "float_next_up_down", since = "1.86.0")]
     pub const fn next_down(self) -> Self {
         // Some targets violate Rust's assumption of IEEE semantics, e.g. by flushing
         // denormals to zero. This is in general unsound and unsupported, but here
@@ -990,7 +997,7 @@ impl f32 {
         }
     }
 
-    /// Calculates the middle point of `self` and `rhs`.
+    /// Calculates the midpoint (average) between `self` and `rhs`.
     ///
     /// This returns NaN when *either* argument is NaN or if a combination of
     /// +inf and -inf is provided as arguments.
@@ -1002,24 +1009,26 @@ impl f32 {
     /// assert_eq!((-5.5f32).midpoint(8.0), 1.25);
     /// ```
     #[inline]
+    #[doc(alias = "average")]
     #[stable(feature = "num_midpoint", since = "1.85.0")]
     #[rustc_const_stable(feature = "num_midpoint", since = "1.85.0")]
     pub const fn midpoint(self, other: f32) -> f32 {
-        cfg_if! {
+        cfg_match! {
             // Allow faster implementation that have known good 64-bit float
             // implementations. Falling back to the branchy code on targets that don't
             // have 64-bit hardware floats or buggy implementations.
             // https://github.com/rust-lang/rust/pull/121062#issuecomment-2123408114
-            if #[cfg(any(
-                    target_arch = "x86_64",
-                    target_arch = "aarch64",
-                    all(any(target_arch = "riscv32", target_arch = "riscv64"), target_feature = "d"),
-                    all(target_arch = "arm", target_feature = "vfp2"),
-                    target_arch = "wasm32",
-                    target_arch = "wasm64",
-                ))] {
+            any(
+                target_arch = "x86_64",
+                target_arch = "aarch64",
+                all(any(target_arch = "riscv32", target_arch = "riscv64"), target_feature = "d"),
+                all(target_arch = "arm", target_feature = "vfp2"),
+                target_arch = "wasm32",
+                target_arch = "wasm64",
+            ) => {
                 ((self as f64 + other as f64) / 2.0) as f32
-            } else {
+            }
+            _ => {
                 const LO: f32 = f32::MIN_POSITIVE * 2.;
                 const HI: f32 = f32::MAX / 2.;
 
@@ -1101,6 +1110,7 @@ impl f32 {
     #[stable(feature = "float_bits_conv", since = "1.20.0")]
     #[rustc_const_stable(feature = "const_float_bits_conv", since = "1.83.0")]
     #[inline]
+    #[cfg_attr(not(bootstrap), allow(unnecessary_transmutes))]
     pub const fn to_bits(self) -> u32 {
         // SAFETY: `u32` is a plain old datatype so we can always transmute to it.
         unsafe { mem::transmute(self) }
@@ -1146,6 +1156,7 @@ impl f32 {
     #[rustc_const_stable(feature = "const_float_bits_conv", since = "1.83.0")]
     #[must_use]
     #[inline]
+    #[cfg_attr(not(bootstrap), allow(unnecessary_transmutes))]
     pub const fn from_bits(v: u32) -> Self {
         // It turns out the safety issues with sNaN were overblown! Hooray!
         // SAFETY: `u32` is a plain old datatype so we can always transmute from it.
@@ -1513,5 +1524,60 @@ impl f32 {
     pub const fn copysign(self, sign: f32) -> f32 {
         // SAFETY: this is actually a safe intrinsic
         unsafe { intrinsics::copysignf32(self, sign) }
+    }
+
+    /// Float addition that allows optimizations based on algebraic rules.
+    ///
+    /// See [algebraic operators](primitive@f32#algebraic-operators) for more info.
+    #[must_use = "method returns a new number and does not mutate the original value"]
+    #[unstable(feature = "float_algebraic", issue = "136469")]
+    #[rustc_const_unstable(feature = "float_algebraic", issue = "136469")]
+    #[inline]
+    pub const fn algebraic_add(self, rhs: f32) -> f32 {
+        intrinsics::fadd_algebraic(self, rhs)
+    }
+
+    /// Float subtraction that allows optimizations based on algebraic rules.
+    ///
+    /// See [algebraic operators](primitive@f32#algebraic-operators) for more info.
+    #[must_use = "method returns a new number and does not mutate the original value"]
+    #[unstable(feature = "float_algebraic", issue = "136469")]
+    #[rustc_const_unstable(feature = "float_algebraic", issue = "136469")]
+    #[inline]
+    pub const fn algebraic_sub(self, rhs: f32) -> f32 {
+        intrinsics::fsub_algebraic(self, rhs)
+    }
+
+    /// Float multiplication that allows optimizations based on algebraic rules.
+    ///
+    /// See [algebraic operators](primitive@f32#algebraic-operators) for more info.
+    #[must_use = "method returns a new number and does not mutate the original value"]
+    #[unstable(feature = "float_algebraic", issue = "136469")]
+    #[rustc_const_unstable(feature = "float_algebraic", issue = "136469")]
+    #[inline]
+    pub const fn algebraic_mul(self, rhs: f32) -> f32 {
+        intrinsics::fmul_algebraic(self, rhs)
+    }
+
+    /// Float division that allows optimizations based on algebraic rules.
+    ///
+    /// See [algebraic operators](primitive@f32#algebraic-operators) for more info.
+    #[must_use = "method returns a new number and does not mutate the original value"]
+    #[unstable(feature = "float_algebraic", issue = "136469")]
+    #[rustc_const_unstable(feature = "float_algebraic", issue = "136469")]
+    #[inline]
+    pub const fn algebraic_div(self, rhs: f32) -> f32 {
+        intrinsics::fdiv_algebraic(self, rhs)
+    }
+
+    /// Float remainder that allows optimizations based on algebraic rules.
+    ///
+    /// See [algebraic operators](primitive@f32#algebraic-operators) for more info.
+    #[must_use = "method returns a new number and does not mutate the original value"]
+    #[unstable(feature = "float_algebraic", issue = "136469")]
+    #[rustc_const_unstable(feature = "float_algebraic", issue = "136469")]
+    #[inline]
+    pub const fn algebraic_rem(self, rhs: f32) -> f32 {
+        intrinsics::frem_algebraic(self, rhs)
     }
 }

@@ -20,7 +20,7 @@ pub use self::c_str::FromBytesUntilNulError;
 pub use self::c_str::FromBytesWithNulError;
 use crate::fmt;
 
-#[unstable(feature = "c_str_module", issue = "112134")]
+#[stable(feature = "c_str_module", since = "CURRENT_RUSTC_VERSION")]
 pub mod c_str;
 
 #[unstable(
@@ -90,4 +90,4 @@ impl fmt::Debug for c_void {
     cfg(not(target_feature = "crt-static"))
 )]
 #[link(name = "/defaultlib:libcmt", modifiers = "+verbatim", cfg(target_feature = "crt-static"))]
-extern "C" {}
+unsafe extern "C" {}
