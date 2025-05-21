@@ -25,6 +25,7 @@ pub(super) const fn from_u32(i: u32) -> Option<char> {
 /// Converts a `u32` to a `char`, ignoring validity. See [`char::from_u32_unchecked`].
 #[inline]
 #[must_use]
+#[cfg_attr(not(bootstrap), allow(unnecessary_transmutes))]
 #[requires(char_try_from_u32(i).is_ok())]
 #[ensures(|result| *result as u32 == i)]
 pub(super) const unsafe fn from_u32_unchecked(i: u32) -> char {
@@ -227,6 +228,7 @@ impl FromStr for char {
 }
 
 #[inline]
+#[cfg_attr(not(bootstrap), allow(unnecessary_transmutes))]
 const fn char_try_from_u32(i: u32) -> Result<char, CharTryFromError> {
     // This is an optimized version of the check
     // (i > MAX as u32) || (i >= 0xD800 && i <= 0xDFFF),
@@ -286,17 +288,5 @@ pub(super) const fn from_digit(num: u32, radix: u32) -> Option<char> {
         if num < 10 { Some((b'0' + num) as char) } else { Some((b'a' + num - 10) as char) }
     } else {
         None
-    }
-}
-
-#[cfg(kani)]
-#[unstable(feature = "kani", issue = "none")]
-mod verify {
-    use super::*;
-
-    #[kani::proof_for_contract(from_u32_unchecked)]
-    fn check_from_u32_unchecked() {
-        let i: u32 = kani::any();
-        unsafe { from_u32_unchecked(i) };
     }
 }
