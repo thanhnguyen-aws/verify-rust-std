@@ -392,11 +392,7 @@ where
     #[rustc_const_stable(feature = "nonzero", since = "1.28.0")]
     #[must_use]
     #[inline]
-    // #[rustc_allow_const_fn_unstable(const_refs_to_cell)] enables byte-level
-    // comparisons within const functions. This is needed here to validate the
-    // contents of `T` by converting a pointer to a `u8` slice for our `requires`
-    // and `ensures` checks.
-    #[rustc_allow_const_fn_unstable(const_refs_to_cell)]
+    #[track_caller]
     #[requires({
         let size = core::mem::size_of::<T>();
         let ptr = &n as *const T as *const u8;
@@ -452,6 +448,7 @@ where
     #[unstable(feature = "nonzero_from_mut", issue = "106290")]
     #[must_use]
     #[inline]
+    #[track_caller]
     pub unsafe fn from_mut_unchecked(n: &mut T) -> &mut Self {
         match Self::from_mut(n) {
             Some(n) => n,
@@ -721,6 +718,7 @@ macro_rules! nonzero_integer {
             #[must_use = "this returns the result of the operation, \
                         without modifying the original"]
             #[inline(always)]
+            #[ensures(|result| result.get() > 0)]
             pub const fn count_ones(self) -> NonZero<u32> {
                 // SAFETY:
                 // `self` is non-zero, which means it has at least one bit set, which means
@@ -754,6 +752,8 @@ macro_rules! nonzero_integer {
             #[must_use = "this returns the result of the operation, \
                         without modifying the original"]
             #[inline(always)]
+            #[ensures(|result| result.get() != 0)]
+            #[ensures(|result| result.rotate_right(n).get() == old(self).get())]
             pub const fn rotate_left(self, n: u32) -> Self {
                 let result = self.get().rotate_left(n);
                 // SAFETY: Rotating bits preserves the property int > 0.
@@ -787,6 +787,8 @@ macro_rules! nonzero_integer {
             #[must_use = "this returns the result of the operation, \
                         without modifying the original"]
             #[inline(always)]
+            #[ensures(|result| result.get() != 0)]
+            #[ensures(|result| result.rotate_left(n).get() == old(self).get())]
             pub const fn rotate_right(self, n: u32) -> Self {
                 let result = self.get().rotate_right(n);
                 // SAFETY: Rotating bits preserves the property int > 0.
@@ -1613,7 +1615,7 @@ macro_rules! nonzero_integer_signedness_dependent_methods {
             super::int_log10::$Int(self.get())
         }
 
-        /// Calculates the middle point of `self` and `rhs`.
+        /// Calculates the midpoint (average) between `self` and `rhs`.
         ///
         /// `midpoint(a, b)` is `(a + b) >> 1` as if it were performed in a
         /// sufficiently-large signed integral type. This implies that the result is
@@ -1639,6 +1641,8 @@ macro_rules! nonzero_integer_signedness_dependent_methods {
         #[rustc_const_stable(feature = "num_midpoint", since = "1.85.0")]
         #[must_use = "this returns the result of the operation, \
                       without modifying the original"]
+        #[doc(alias = "average_floor")]
+        #[doc(alias = "average")]
         #[inline]
         pub const fn midpoint(self, rhs: Self) -> Self {
             // SAFETY: The only way to get `0` with midpoint is to have two opposite or
@@ -1728,8 +1732,8 @@ macro_rules! nonzero_integer_signedness_dependent_methods {
         ///
         #[doc = concat!("assert_eq!(n.cast_signed(), NonZero::new(-1", stringify!($Sint), ").unwrap());")]
         /// ```
-        #[stable(feature = "integer_sign_cast", since = "CURRENT_RUSTC_VERSION")]
-        #[rustc_const_stable(feature = "integer_sign_cast", since = "CURRENT_RUSTC_VERSION")]
+        #[stable(feature = "integer_sign_cast", since = "1.87.0")]
+        #[rustc_const_stable(feature = "integer_sign_cast", since = "1.87.0")]
         #[must_use = "this returns the result of the operation, \
                       without modifying the original"]
         #[inline(always)]
@@ -2167,8 +2171,8 @@ macro_rules! nonzero_integer_signedness_dependent_methods {
         ///
         #[doc = concat!("assert_eq!(n.cast_unsigned(), NonZero::<", stringify!($Uint), ">::MAX);")]
         /// ```
-        #[stable(feature = "integer_sign_cast", since = "CURRENT_RUSTC_VERSION")]
-        #[rustc_const_stable(feature = "integer_sign_cast", since = "CURRENT_RUSTC_VERSION")]
+        #[stable(feature = "integer_sign_cast", since = "1.87.0")]
+        #[rustc_const_stable(feature = "integer_sign_cast", since = "1.87.0")]
         #[must_use = "this returns the result of the operation, \
                       without modifying the original"]
         #[inline(always)]
@@ -2571,56 +2575,4 @@ mod verify {
     nonzero_check_clamp_panic!(core::num::NonZeroU64, nonzero_check_clamp_panic_for_u64);
     nonzero_check_clamp_panic!(core::num::NonZeroU128, nonzero_check_clamp_panic_for_u128);
     nonzero_check_clamp_panic!(core::num::NonZeroUsize, nonzero_check_clamp_panic_for_usize);
-
-    macro_rules! nonzero_check_count_ones {
-        ($nonzero_type:ty, $nonzero_check_count_ones_for:ident) => {
-            #[kani::proof]
-            pub fn $nonzero_check_count_ones_for() {
-                let x: $nonzero_type = kani::any();
-                let result = x.count_ones();
-                // Since x is non-zero, count_ones should never return 0
-                assert!(result.get() > 0);
-            }
-        };
-    }
-
-    // Use the macro to generate different versions of the function for multiple types
-    nonzero_check_count_ones!(core::num::NonZeroI8, nonzero_check_count_ones_for_i8);
-    nonzero_check_count_ones!(core::num::NonZeroI16, nonzero_check_count_ones_for_i16);
-    nonzero_check_count_ones!(core::num::NonZeroI32, nonzero_check_count_ones_for_i32);
-    nonzero_check_count_ones!(core::num::NonZeroI64, nonzero_check_count_ones_for_i64);
-    nonzero_check_count_ones!(core::num::NonZeroI128, nonzero_check_count_ones_for_i128);
-    nonzero_check_count_ones!(core::num::NonZeroIsize, nonzero_check_count_ones_for_isize);
-    nonzero_check_count_ones!(core::num::NonZeroU8, nonzero_check_count_ones_for_u8);
-    nonzero_check_count_ones!(core::num::NonZeroU16, nonzero_check_count_ones_for_u16);
-    nonzero_check_count_ones!(core::num::NonZeroU32, nonzero_check_count_ones_for_u32);
-    nonzero_check_count_ones!(core::num::NonZeroU64, nonzero_check_count_ones_for_u64);
-    nonzero_check_count_ones!(core::num::NonZeroU128, nonzero_check_count_ones_for_u128);
-    nonzero_check_count_ones!(core::num::NonZeroUsize, nonzero_check_count_ones_for_usize);
-
-    macro_rules! nonzero_check_rotate_left_and_right {
-        ($nonzero_type:ty, $nonzero_check_rotate_for:ident) => {
-            #[kani::proof]
-            pub fn $nonzero_check_rotate_for() {
-                let x: $nonzero_type = kani::any();
-                let n: u32 = kani::any();
-                let result = x.rotate_left(n).rotate_right(n);
-                assert!(result == x);
-            }
-        };
-    }
-
-    // Use the macro to generate different versions of the function for multiple types
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroI8, nonzero_check_rotate_for_i8);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroI16, nonzero_check_rotate_for_i16);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroI32, nonzero_check_rotate_for_i32);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroI64, nonzero_check_rotate_for_i64);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroI128, nonzero_check_rotate_for_i128);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroIsize, nonzero_check_rotate_for_isize);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroU8, nonzero_check_rotate_for_u8);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroU16, nonzero_check_rotate_for_u16);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroU32, nonzero_check_rotate_for_u32);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroU64, nonzero_check_rotate_for_u64);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroU128, nonzero_check_rotate_for_u128);
-    nonzero_check_rotate_left_and_right!(core::num::NonZeroUsize, nonzero_check_rotate_for_usize);
 }

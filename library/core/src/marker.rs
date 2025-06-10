@@ -17,6 +17,7 @@ use crate::cell::UnsafeCell;
 use crate::cmp;
 use crate::fmt::Debug;
 use crate::hash::{Hash, Hasher};
+use crate::pin::UnsafePinned;
 
 /// Implements a given marker trait for multiple types at the same time.
 ///
@@ -549,72 +550,72 @@ pub trait BikeshedGuaranteedNoDrop {}
 #[lang = "sync"]
 #[rustc_on_unimplemented(
     on(
-        _Self = "core::cell::once::OnceCell<T>",
+        Self = "core::cell::once::OnceCell<T>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::OnceLock` instead"
     ),
     on(
-        _Self = "core::cell::Cell<u8>",
+        Self = "core::cell::Cell<u8>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicU8` instead",
     ),
     on(
-        _Self = "core::cell::Cell<u16>",
+        Self = "core::cell::Cell<u16>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicU16` instead",
     ),
     on(
-        _Self = "core::cell::Cell<u32>",
+        Self = "core::cell::Cell<u32>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicU32` instead",
     ),
     on(
-        _Self = "core::cell::Cell<u64>",
+        Self = "core::cell::Cell<u64>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicU64` instead",
     ),
     on(
-        _Self = "core::cell::Cell<usize>",
+        Self = "core::cell::Cell<usize>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicUsize` instead",
     ),
     on(
-        _Self = "core::cell::Cell<i8>",
+        Self = "core::cell::Cell<i8>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicI8` instead",
     ),
     on(
-        _Self = "core::cell::Cell<i16>",
+        Self = "core::cell::Cell<i16>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicI16` instead",
     ),
     on(
-        _Self = "core::cell::Cell<i32>",
+        Self = "core::cell::Cell<i32>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicI32` instead",
     ),
     on(
-        _Self = "core::cell::Cell<i64>",
+        Self = "core::cell::Cell<i64>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicI64` instead",
     ),
     on(
-        _Self = "core::cell::Cell<isize>",
+        Self = "core::cell::Cell<isize>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicIsize` instead",
     ),
     on(
-        _Self = "core::cell::Cell<bool>",
+        Self = "core::cell::Cell<bool>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicBool` instead",
     ),
     on(
         all(
-            _Self = "core::cell::Cell<T>",
-            not(_Self = "core::cell::Cell<u8>"),
-            not(_Self = "core::cell::Cell<u16>"),
-            not(_Self = "core::cell::Cell<u32>"),
-            not(_Self = "core::cell::Cell<u64>"),
-            not(_Self = "core::cell::Cell<usize>"),
-            not(_Self = "core::cell::Cell<i8>"),
-            not(_Self = "core::cell::Cell<i16>"),
-            not(_Self = "core::cell::Cell<i32>"),
-            not(_Self = "core::cell::Cell<i64>"),
-            not(_Self = "core::cell::Cell<isize>"),
-            not(_Self = "core::cell::Cell<bool>")
+            Self = "core::cell::Cell<T>",
+            not(Self = "core::cell::Cell<u8>"),
+            not(Self = "core::cell::Cell<u16>"),
+            not(Self = "core::cell::Cell<u32>"),
+            not(Self = "core::cell::Cell<u64>"),
+            not(Self = "core::cell::Cell<usize>"),
+            not(Self = "core::cell::Cell<i8>"),
+            not(Self = "core::cell::Cell<i16>"),
+            not(Self = "core::cell::Cell<i32>"),
+            not(Self = "core::cell::Cell<i64>"),
+            not(Self = "core::cell::Cell<isize>"),
+            not(Self = "core::cell::Cell<bool>")
         ),
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock`",
     ),
     on(
-        _Self = "core::cell::RefCell<T>",
+        Self = "core::cell::RefCell<T>",
         note = "if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` instead",
     ),
     message = "`{Self}` cannot be shared between threads safely",
@@ -878,6 +879,22 @@ marker_impls! {
         {T: ?Sized} &mut T,
 }
 
+/// Used to determine whether a type contains any `UnsafePinned` (or `PhantomPinned`) internally,
+/// but not through an indirection. This affects, for example, whether we emit `noalias` metadata
+/// for `&mut T` or not.
+///
+/// This is part of [RFC 3467](https://rust-lang.github.io/rfcs/3467-unsafe-pinned.html), and is
+/// tracked by [#125735](https://github.com/rust-lang/rust/issues/125735).
+#[lang = "unsafe_unpin"]
+pub(crate) unsafe auto trait UnsafeUnpin {}
+
+impl<T: ?Sized> !UnsafeUnpin for UnsafePinned<T> {}
+unsafe impl<T: ?Sized> UnsafeUnpin for PhantomData<T> {}
+unsafe impl<T: ?Sized> UnsafeUnpin for *const T {}
+unsafe impl<T: ?Sized> UnsafeUnpin for *mut T {}
+unsafe impl<T: ?Sized> UnsafeUnpin for &T {}
+unsafe impl<T: ?Sized> UnsafeUnpin for &mut T {}
+
 /// Types that do not require any pinning guarantees.
 ///
 /// For information on what "pinning" is, see the [`pin` module] documentation.
@@ -953,12 +970,23 @@ pub auto trait Unpin {}
 /// A marker type which does not implement `Unpin`.
 ///
 /// If a type contains a `PhantomPinned`, it will not implement `Unpin` by default.
+//
+// FIXME(unsafe_pinned): This is *not* a stable guarantee we want to make, at least not yet.
+// Note that for backwards compatibility with the new [`UnsafePinned`] wrapper type, placing this
+// marker in your struct acts as if you wrapped the entire struct in an `UnsafePinned`. This type
+// will likely eventually be deprecated, and all new code should be using `UnsafePinned` instead.
 #[stable(feature = "pin", since = "1.33.0")]
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct PhantomPinned;
 
 #[stable(feature = "pin", since = "1.33.0")]
 impl !Unpin for PhantomPinned {}
+
+// This is a small hack to allow existing code which uses PhantomPinned to opt-out of noalias to
+// continue working. Ideally PhantomPinned could just wrap an `UnsafePinned<()>` to get the same
+// effect, but we can't add a new field to an already stable unit struct -- that would be a breaking
+// change.
+impl !UnsafeUnpin for PhantomPinned {}
 
 marker_impls! {
     #[stable(feature = "pin", since = "1.33.0")]

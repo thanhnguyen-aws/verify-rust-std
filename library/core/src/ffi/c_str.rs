@@ -86,8 +86,9 @@ use crate::{fmt, ops, slice, str};
 ///
 /// fn my_string_safe() -> String {
 ///     let cstr = unsafe { CStr::from_ptr(my_string()) };
-///     // Get copy-on-write Cow<'_, str>, then guarantee a freshly-owned String allocation
-///     String::from_utf8_lossy(cstr.to_bytes()).to_string()
+///     // Get a copy-on-write Cow<'_, str>, then extract the
+///     // allocated String (or allocate a fresh one if needed).
+///     cstr.to_string_lossy().into_owned()
 /// }
 ///
 /// println!("string: {}", my_string_safe());
@@ -157,7 +158,6 @@ impl Error for FromBytesWithNulError {
 /// within the slice.
 ///
 /// This error is created by the [`CStr::from_bytes_until_nul`] method.
-///
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[stable(feature = "cstr_from_bytes_until_nul", since = "1.69.0")]
 pub struct FromBytesUntilNulError(());
@@ -249,7 +249,7 @@ impl CStr {
     /// * `ptr` must be [valid] for reads of bytes up to and including the nul terminator.
     ///   This means in particular:
     ///
-    ///     * The entire memory range of this `CStr` must be contained within a single allocated object!
+    ///     * The entire memory range of this `CStr` must be contained within a single allocation!
     ///     * `ptr` must be non-null even for a zero-length cstr.
     ///
     /// * The memory referenced by the returned `CStr` must not be mutated for
@@ -559,13 +559,8 @@ impl CStr {
     /// # Examples
     ///
     /// ```
-    /// use std::ffi::CStr;
-    ///
-    /// let cstr = CStr::from_bytes_with_nul(b"foo\0").unwrap();
-    /// assert_eq!(cstr.count_bytes(), 3);
-    ///
-    /// let cstr = CStr::from_bytes_with_nul(b"\0").unwrap();
-    /// assert_eq!(cstr.count_bytes(), 0);
+    /// assert_eq!(c"foo".count_bytes(), 3);
+    /// assert_eq!(c"".count_bytes(), 0);
     /// ```
     #[inline]
     #[must_use]
@@ -581,19 +576,8 @@ impl CStr {
     /// # Examples
     ///
     /// ```
-    /// use std::ffi::CStr;
-    /// # use std::ffi::FromBytesWithNulError;
-    ///
-    /// # fn main() { test().unwrap(); }
-    /// # fn test() -> Result<(), FromBytesWithNulError> {
-    /// let cstr = CStr::from_bytes_with_nul(b"foo\0")?;
-    /// assert!(!cstr.is_empty());
-    ///
-    /// let empty_cstr = CStr::from_bytes_with_nul(b"\0")?;
-    /// assert!(empty_cstr.is_empty());
+    /// assert!(!c"foo".is_empty());
     /// assert!(c"".is_empty());
-    /// # Ok(())
-    /// # }
     /// ```
     #[inline]
     #[stable(feature = "cstr_is_empty", since = "1.71.0")]
@@ -617,10 +601,7 @@ impl CStr {
     /// # Examples
     ///
     /// ```
-    /// use std::ffi::CStr;
-    ///
-    /// let cstr = CStr::from_bytes_with_nul(b"foo\0").expect("CStr::from_bytes_with_nul failed");
-    /// assert_eq!(cstr.to_bytes(), b"foo");
+    /// assert_eq!(c"foo".to_bytes(), b"foo");
     /// ```
     #[inline]
     #[must_use = "this returns the result of the operation, \
@@ -646,10 +627,7 @@ impl CStr {
     /// # Examples
     ///
     /// ```
-    /// use std::ffi::CStr;
-    ///
-    /// let cstr = CStr::from_bytes_with_nul(b"foo\0").expect("CStr::from_bytes_with_nul failed");
-    /// assert_eq!(cstr.to_bytes_with_nul(), b"foo\0");
+    /// assert_eq!(c"foo".to_bytes_with_nul(), b"foo\0");
     /// ```
     #[inline]
     #[must_use = "this returns the result of the operation, \
@@ -671,10 +649,8 @@ impl CStr {
     ///
     /// ```
     /// #![feature(cstr_bytes)]
-    /// use std::ffi::CStr;
     ///
-    /// let cstr = CStr::from_bytes_with_nul(b"foo\0").expect("CStr::from_bytes_with_nul failed");
-    /// assert!(cstr.bytes().eq(*b"foo"));
+    /// assert!(c"foo".bytes().eq(*b"foo"));
     /// ```
     #[inline]
     #[unstable(feature = "cstr_bytes", issue = "112115")]
@@ -693,10 +669,7 @@ impl CStr {
     /// # Examples
     ///
     /// ```
-    /// use std::ffi::CStr;
-    ///
-    /// let cstr = CStr::from_bytes_with_nul(b"foo\0").expect("CStr::from_bytes_with_nul failed");
-    /// assert_eq!(cstr.to_str(), Ok("foo"));
+    /// assert_eq!(c"foo".to_str(), Ok("foo"));
     /// ```
     #[stable(feature = "cstr_to_str", since = "1.4.0")]
     #[rustc_const_stable(feature = "const_cstr_methods", since = "1.72.0")]
@@ -706,6 +679,30 @@ impl CStr {
         // be rewritten to do the UTF-8 check inline with the length calculation
         // instead of doing it afterwards.
         str::from_utf8(self.to_bytes())
+    }
+
+    /// Returns an object that implements [`Display`] for safely printing a [`CStr`] that may
+    /// contain non-Unicode data.
+    ///
+    /// Behaves as if `self` were first lossily converted to a `str`, with invalid UTF-8 presented
+    /// as the Unicode replacement character: �.
+    ///
+    /// [`Display`]: fmt::Display
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #![feature(cstr_display)]
+    ///
+    /// let cstr = c"Hello, world!";
+    /// println!("{}", cstr.display());
+    /// ```
+    #[unstable(feature = "cstr_display", issue = "139984")]
+    #[must_use = "this does not display the `CStr`; \
+                  it returns an object that can be displayed"]
+    #[inline]
+    pub fn display(&self) -> impl fmt::Display {
+        crate::bstr::ByteStr::from_bytes(self.to_bytes())
     }
 }
 

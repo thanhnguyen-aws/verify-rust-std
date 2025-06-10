@@ -21,7 +21,6 @@
 mod tests;
 
 use crate::ffi::OsString;
-use crate::fmt;
 use crate::io::{self, BorrowedCursor, IoSlice, IoSliceMut, Read, Seek, SeekFrom, Write};
 use crate::path::{Path, PathBuf};
 use crate::sealed::Sealed;
@@ -29,6 +28,7 @@ use crate::sync::Arc;
 use crate::sys::fs as fs_imp;
 use crate::sys_common::{AsInner, AsInnerMut, FromInner, IntoInner};
 use crate::time::SystemTime;
+use crate::{error, fmt};
 
 /// An object providing access to an open file on the filesystem.
 ///
@@ -114,6 +114,22 @@ use crate::time::SystemTime;
 #[cfg_attr(not(test), rustc_diagnostic_item = "File")]
 pub struct File {
     inner: fs_imp::File,
+}
+
+/// An enumeration of possible errors which can occur while trying to acquire a lock
+/// from the [`try_lock`] method and [`try_lock_shared`] method on a [`File`].
+///
+/// [`try_lock`]: File::try_lock
+/// [`try_lock_shared`]: File::try_lock_shared
+#[unstable(feature = "file_lock", issue = "130994")]
+pub enum TryLockError {
+    /// The lock could not be acquired due to an I/O error on the file. The standard library will
+    /// not return an [`ErrorKind::WouldBlock`] error inside [`TryLockError::Error`]
+    ///
+    /// [`ErrorKind::WouldBlock`]: io::ErrorKind::WouldBlock
+    Error(io::Error),
+    /// The lock could not be acquired at this time because it is held by another handle/process.
+    WouldBlock,
 }
 
 /// Metadata information about a file.
@@ -269,8 +285,7 @@ pub fn read<P: AsRef<Path>>(path: P) -> io::Result<Vec<u8>> {
     fn inner(path: &Path) -> io::Result<Vec<u8>> {
         let mut file = File::open(path)?;
         let size = file.metadata().map(|m| m.len() as usize).ok();
-        let mut bytes = Vec::new();
-        bytes.try_reserve_exact(size.unwrap_or(0))?;
+        let mut bytes = Vec::try_with_capacity(size.unwrap_or(0))?;
         io::default_read_to_end(&mut file, &mut bytes, size)?;
         Ok(bytes)
     }
@@ -350,6 +365,40 @@ pub fn write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> io::Result
         File::create(path)?.write_all(contents)
     }
     inner(path.as_ref(), contents.as_ref())
+}
+
+#[unstable(feature = "file_lock", issue = "130994")]
+impl error::Error for TryLockError {}
+
+#[unstable(feature = "file_lock", issue = "130994")]
+impl fmt::Debug for TryLockError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TryLockError::Error(err) => err.fmt(f),
+            TryLockError::WouldBlock => "WouldBlock".fmt(f),
+        }
+    }
+}
+
+#[unstable(feature = "file_lock", issue = "130994")]
+impl fmt::Display for TryLockError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TryLockError::Error(_) => "lock acquisition failed due to I/O error",
+            TryLockError::WouldBlock => "lock acquisition failed because the operation would block",
+        }
+        .fmt(f)
+    }
+}
+
+#[unstable(feature = "file_lock", issue = "130994")]
+impl From<TryLockError> for io::Error {
+    fn from(err: TryLockError) -> io::Error {
+        match err {
+            TryLockError::Error(err) => err,
+            TryLockError::WouldBlock => io::ErrorKind::WouldBlock.into(),
+        }
+    }
 }
 
 impl File {
@@ -665,6 +714,7 @@ impl File {
     /// # Examples
     ///
     /// ```no_run
+    /// #![feature(file_lock)]
     /// use std::fs::File;
     ///
     /// fn main() -> std::io::Result<()> {
@@ -673,7 +723,7 @@ impl File {
     ///     Ok(())
     /// }
     /// ```
-    #[stable(feature = "file_lock", since = "CURRENT_RUSTC_VERSION")]
+    #[unstable(feature = "file_lock", issue = "130994")]
     pub fn lock(&self) -> io::Result<()> {
         self.inner.lock()
     }
@@ -717,6 +767,7 @@ impl File {
     /// # Examples
     ///
     /// ```no_run
+    /// #![feature(file_lock)]
     /// use std::fs::File;
     ///
     /// fn main() -> std::io::Result<()> {
@@ -725,15 +776,15 @@ impl File {
     ///     Ok(())
     /// }
     /// ```
-    #[stable(feature = "file_lock", since = "CURRENT_RUSTC_VERSION")]
+    #[unstable(feature = "file_lock", issue = "130994")]
     pub fn lock_shared(&self) -> io::Result<()> {
         self.inner.lock_shared()
     }
 
     /// Try to acquire an exclusive lock on the file.
     ///
-    /// Returns `Ok(false)` if a different lock is already held on this file (via another
-    /// handle/descriptor).
+    /// Returns `Err(TryLockError::WouldBlock)` if a different lock is already held on this file
+    /// (via another handle/descriptor).
     ///
     /// This acquires an exclusive lock; no other file handle to this file may acquire another lock.
     ///
@@ -774,23 +825,31 @@ impl File {
     /// # Examples
     ///
     /// ```no_run
-    /// use std::fs::File;
+    /// #![feature(file_lock)]
+    /// use std::fs::{File, TryLockError};
     ///
     /// fn main() -> std::io::Result<()> {
     ///     let f = File::create("foo.txt")?;
+    ///     // Explicit handling of the WouldBlock error
+    ///     match f.try_lock() {
+    ///         Ok(_) => (),
+    ///         Err(TryLockError::WouldBlock) => (), // Lock not acquired
+    ///         Err(TryLockError::Error(err)) => return Err(err),
+    ///     }
+    ///     // Alternately, propagate the error as an io::Error
     ///     f.try_lock()?;
     ///     Ok(())
     /// }
     /// ```
-    #[stable(feature = "file_lock", since = "CURRENT_RUSTC_VERSION")]
-    pub fn try_lock(&self) -> io::Result<bool> {
+    #[unstable(feature = "file_lock", issue = "130994")]
+    pub fn try_lock(&self) -> Result<(), TryLockError> {
         self.inner.try_lock()
     }
 
     /// Try to acquire a shared (non-exclusive) lock on the file.
     ///
-    /// Returns `Ok(false)` if an exclusive lock is already held on this file (via another
-    /// handle/descriptor).
+    /// Returns `Err(TryLockError::WouldBlock)` if a different lock is already held on this file
+    /// (via another handle/descriptor).
     ///
     /// This acquires a shared lock; more than one file handle may hold a shared lock, but none may
     /// hold an exclusive lock at the same time.
@@ -830,16 +889,25 @@ impl File {
     /// # Examples
     ///
     /// ```no_run
-    /// use std::fs::File;
+    /// #![feature(file_lock)]
+    /// use std::fs::{File, TryLockError};
     ///
     /// fn main() -> std::io::Result<()> {
     ///     let f = File::open("foo.txt")?;
+    ///     // Explicit handling of the WouldBlock error
+    ///     match f.try_lock_shared() {
+    ///         Ok(_) => (),
+    ///         Err(TryLockError::WouldBlock) => (), // Lock not acquired
+    ///         Err(TryLockError::Error(err)) => return Err(err),
+    ///     }
+    ///     // Alternately, propagate the error as an io::Error
     ///     f.try_lock_shared()?;
+    ///
     ///     Ok(())
     /// }
     /// ```
-    #[stable(feature = "file_lock", since = "CURRENT_RUSTC_VERSION")]
-    pub fn try_lock_shared(&self) -> io::Result<bool> {
+    #[unstable(feature = "file_lock", issue = "130994")]
+    pub fn try_lock_shared(&self) -> Result<(), TryLockError> {
         self.inner.try_lock_shared()
     }
 
@@ -866,6 +934,7 @@ impl File {
     /// # Examples
     ///
     /// ```no_run
+    /// #![feature(file_lock)]
     /// use std::fs::File;
     ///
     /// fn main() -> std::io::Result<()> {
@@ -875,7 +944,7 @@ impl File {
     ///     Ok(())
     /// }
     /// ```
-    #[stable(feature = "file_lock", since = "CURRENT_RUSTC_VERSION")]
+    #[unstable(feature = "file_lock", issue = "130994")]
     pub fn unlock(&self) -> io::Result<()> {
         self.inner.unlock()
     }
@@ -1342,6 +1411,9 @@ impl Write for Arc<File> {
 impl Seek for Arc<File> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         (&**self).seek(pos)
+    }
+    fn stream_position(&mut self) -> io::Result<u64> {
+        (&**self).stream_position()
     }
 }
 
@@ -2362,7 +2434,7 @@ impl AsInner<fs_imp::DirEntry> for DirEntry {
 #[doc(alias = "rm", alias = "unlink", alias = "DeleteFile")]
 #[stable(feature = "rust1", since = "1.0.0")]
 pub fn remove_file<P: AsRef<Path>>(path: P) -> io::Result<()> {
-    fs_imp::unlink(path.as_ref())
+    fs_imp::remove_file(path.as_ref())
 }
 
 /// Given a path, queries the file system to get information about a file,
@@ -2401,7 +2473,7 @@ pub fn remove_file<P: AsRef<Path>>(path: P) -> io::Result<()> {
 #[doc(alias = "stat")]
 #[stable(feature = "rust1", since = "1.0.0")]
 pub fn metadata<P: AsRef<Path>>(path: P) -> io::Result<Metadata> {
-    fs_imp::stat(path.as_ref()).map(Metadata)
+    fs_imp::metadata(path.as_ref()).map(Metadata)
 }
 
 /// Queries the metadata about a file without following symlinks.
@@ -2436,7 +2508,7 @@ pub fn metadata<P: AsRef<Path>>(path: P) -> io::Result<Metadata> {
 #[doc(alias = "lstat")]
 #[stable(feature = "symlink_metadata", since = "1.1.0")]
 pub fn symlink_metadata<P: AsRef<Path>>(path: P) -> io::Result<Metadata> {
-    fs_imp::lstat(path.as_ref()).map(Metadata)
+    fs_imp::symlink_metadata(path.as_ref()).map(Metadata)
 }
 
 /// Renames a file or directory to a new name, replacing the original file if
@@ -2590,7 +2662,7 @@ pub fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> io::Result<u64> {
 #[doc(alias = "CreateHardLink", alias = "linkat")]
 #[stable(feature = "rust1", since = "1.0.0")]
 pub fn hard_link<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> io::Result<()> {
-    fs_imp::link(original.as_ref(), link.as_ref())
+    fs_imp::hard_link(original.as_ref(), link.as_ref())
 }
 
 /// Creates a new symbolic link on the filesystem.
@@ -2656,7 +2728,7 @@ pub fn soft_link<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> io::Re
 /// ```
 #[stable(feature = "rust1", since = "1.0.0")]
 pub fn read_link<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
-    fs_imp::readlink(path.as_ref())
+    fs_imp::read_link(path.as_ref())
 }
 
 /// Returns the canonical, absolute form of a path with all intermediate
@@ -2747,8 +2819,8 @@ pub fn create_dir<P: AsRef<Path>>(path: P) -> io::Result<()> {
 /// Recursively create a directory and all of its parent components if they
 /// are missing.
 ///
-/// If this function returns an error, some of the parent components might have
-/// been created already.
+/// This function is not atomic. If it returns an error, any parent components it was able to create
+/// will remain.
 ///
 /// If the empty path is passed to this function, it always succeeds without
 /// creating any directories.
@@ -2832,7 +2904,7 @@ pub fn create_dir_all<P: AsRef<Path>>(path: P) -> io::Result<()> {
 #[doc(alias = "rmdir", alias = "RemoveDirectory")]
 #[stable(feature = "rust1", since = "1.0.0")]
 pub fn remove_dir<P: AsRef<Path>>(path: P) -> io::Result<()> {
-    fs_imp::rmdir(path.as_ref())
+    fs_imp::remove_dir(path.as_ref())
 }
 
 /// Removes a directory at this path, after removing all its contents. Use
@@ -2843,16 +2915,27 @@ pub fn remove_dir<P: AsRef<Path>>(path: P) -> io::Result<()> {
 ///
 /// # Platform-specific behavior
 ///
-/// This function currently corresponds to `openat`, `fdopendir`, `unlinkat` and `lstat` functions
-/// on Unix (except for REDOX) and the `CreateFileW`, `GetFileInformationByHandleEx`,
-/// `SetFileInformationByHandle`, and `NtCreateFile` functions on Windows. Note that, this
-/// [may change in the future][changes].
+/// These implementation details [may change in the future][changes].
+///
+/// - "Unix-like": By default, this function currently corresponds to
+/// `openat`, `fdopendir`, `unlinkat` and `lstat`
+/// on Unix-family platforms, except where noted otherwise.
+/// - "Windows": This function currently corresponds to `CreateFileW`,
+/// `GetFileInformationByHandleEx`, `SetFileInformationByHandle`, and `NtCreateFile`.
+///
+/// ## Time-of-check to time-of-use (TOCTOU) race conditions
+/// On a few platforms there is no way to remove a directory's contents without following symlinks
+/// unless you perform a check and then operate on paths based on that directory.
+/// This allows concurrently-running code to replace the directory with a symlink after the check,
+/// causing a removal to instead operate on a path based on the symlink. This is a TOCTOU race.
+/// By default, `fs::remove_dir_all` protects against a symlink TOCTOU race on all platforms
+/// except the following. It should not be used in security-sensitive contexts on these platforms:
+/// - Miri: Even when emulating targets where the underlying implementation will protect against
+/// TOCTOU races, Miri will not do so.
+/// - Redox OS: This function does not protect against TOCTOU races, as Redox does not implement
+/// the required platform support to do so.
 ///
 /// [changes]: io#platform-specific-behavior
-///
-/// On REDOX, as well as when running in Miri for any target, this function is not protected against
-/// time-of-check to time-of-use (TOCTOU) race conditions, and should not be used in
-/// security-sensitive code on those platforms. All other platforms are protected.
 ///
 /// # Errors
 ///
@@ -2866,6 +2949,8 @@ pub fn remove_dir<P: AsRef<Path>>(path: P) -> io::Result<()> {
 ///
 /// Consider ignoring the error if validating the removal is not required for your use case.
 ///
+/// This function may return [`io::ErrorKind::DirectoryNotEmpty`] if the directory is concurrently
+/// written into, which typically indicates some contents were removed but not all.
 /// [`io::ErrorKind::NotFound`] is only returned if no removal occurs.
 ///
 /// [`fs::remove_file`]: remove_file
@@ -2959,7 +3044,7 @@ pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> io::Result<()> {
 #[doc(alias = "ls", alias = "opendir", alias = "FindFirstFile", alias = "FindNextFile")]
 #[stable(feature = "rust1", since = "1.0.0")]
 pub fn read_dir<P: AsRef<Path>>(path: P) -> io::Result<ReadDir> {
-    fs_imp::readdir(path.as_ref()).map(ReadDir)
+    fs_imp::read_dir(path.as_ref()).map(ReadDir)
 }
 
 /// Changes the permissions found on a file or a directory.
@@ -2971,6 +3056,21 @@ pub fn read_dir<P: AsRef<Path>>(path: P) -> io::Result<ReadDir> {
 /// Note that, this [may change in the future][changes].
 ///
 /// [changes]: io#platform-specific-behavior
+///
+/// ## Symlinks
+/// On UNIX-like systems, this function will update the permission bits
+/// of the file pointed to by the symlink.
+///
+/// Note that this behavior can lead to privalage escalation vulnerabilites,
+/// where the ability to create a symlink in one directory allows you to
+/// cause the permissions of another file or directory to be modified.
+///
+/// For this reason, using this function with symlinks should be avoided.
+/// When possible, permissions should be set at creation time instead.
+///
+/// # Rationale
+/// POSIX does not specify an `lchmod` function,
+/// and symlinks can be followed regardless of what permission bits are set.
 ///
 /// # Errors
 ///
@@ -2995,7 +3095,7 @@ pub fn read_dir<P: AsRef<Path>>(path: P) -> io::Result<ReadDir> {
 #[doc(alias = "chmod", alias = "SetFileAttributes")]
 #[stable(feature = "set_permissions", since = "1.1.0")]
 pub fn set_permissions<P: AsRef<Path>>(path: P, perm: Permissions) -> io::Result<()> {
-    fs_imp::set_perm(path.as_ref(), perm.0)
+    fs_imp::set_permissions(path.as_ref(), perm.0)
 }
 
 impl DirBuilder {

@@ -193,7 +193,7 @@
 //!
 //! A simple spinlock:
 //!
-//! ```
+//! ```ignore-wasm
 //! use std::sync::Arc;
 //! use std::sync::atomic::{AtomicUsize, Ordering};
 //! use std::{hint, thread};
@@ -246,6 +246,100 @@ use self::Ordering::*;
 use crate::cell::UnsafeCell;
 use crate::hint::spin_loop;
 use crate::{fmt, intrinsics};
+
+trait Sealed {}
+
+/// A marker trait for primitive types which can be modified atomically.
+///
+/// This is an implementation detail for <code>[Atomic]\<T></code> which may disappear or be replaced at any time.
+///
+/// # Safety
+///
+/// Types implementing this trait must be primitives that can be modified atomically.
+///
+/// The associated `Self::AtomicInner` type must have the same size and bit validity as `Self`,
+/// but may have a higher alignment requirement, so the following `transmute`s are sound:
+///
+/// - `&mut Self::AtomicInner` as `&mut Self`
+/// - `Self` as `Self::AtomicInner` or the reverse
+#[unstable(
+    feature = "atomic_internals",
+    reason = "implementation detail which may disappear or be replaced at any time",
+    issue = "none"
+)]
+#[expect(private_bounds)]
+pub unsafe trait AtomicPrimitive: Sized + Copy + Sealed {
+    /// Temporary implementation detail.
+    type AtomicInner: Sized;
+}
+
+macro impl_atomic_primitive(
+    $Atom:ident $(<$T:ident>)? ($Primitive:ty),
+    size($size:literal),
+    align($align:literal) $(,)?
+) {
+    impl $(<$T>)? Sealed for $Primitive {}
+
+    #[unstable(
+        feature = "atomic_internals",
+        reason = "implementation detail which may disappear or be replaced at any time",
+        issue = "none"
+    )]
+    #[cfg(target_has_atomic_load_store = $size)]
+    unsafe impl $(<$T>)? AtomicPrimitive for $Primitive {
+        type AtomicInner = $Atom $(<$T>)?;
+    }
+}
+
+impl_atomic_primitive!(AtomicBool(bool), size("8"), align(1));
+impl_atomic_primitive!(AtomicI8(i8), size("8"), align(1));
+impl_atomic_primitive!(AtomicU8(u8), size("8"), align(1));
+impl_atomic_primitive!(AtomicI16(i16), size("16"), align(2));
+impl_atomic_primitive!(AtomicU16(u16), size("16"), align(2));
+impl_atomic_primitive!(AtomicI32(i32), size("32"), align(4));
+impl_atomic_primitive!(AtomicU32(u32), size("32"), align(4));
+impl_atomic_primitive!(AtomicI64(i64), size("64"), align(8));
+impl_atomic_primitive!(AtomicU64(u64), size("64"), align(8));
+impl_atomic_primitive!(AtomicI128(i128), size("128"), align(16));
+impl_atomic_primitive!(AtomicU128(u128), size("128"), align(16));
+
+#[cfg(target_pointer_width = "16")]
+impl_atomic_primitive!(AtomicIsize(isize), size("ptr"), align(2));
+#[cfg(target_pointer_width = "32")]
+impl_atomic_primitive!(AtomicIsize(isize), size("ptr"), align(4));
+#[cfg(target_pointer_width = "64")]
+impl_atomic_primitive!(AtomicIsize(isize), size("ptr"), align(8));
+
+#[cfg(target_pointer_width = "16")]
+impl_atomic_primitive!(AtomicUsize(usize), size("ptr"), align(2));
+#[cfg(target_pointer_width = "32")]
+impl_atomic_primitive!(AtomicUsize(usize), size("ptr"), align(4));
+#[cfg(target_pointer_width = "64")]
+impl_atomic_primitive!(AtomicUsize(usize), size("ptr"), align(8));
+
+#[cfg(target_pointer_width = "16")]
+impl_atomic_primitive!(AtomicPtr<T>(*mut T), size("ptr"), align(2));
+#[cfg(target_pointer_width = "32")]
+impl_atomic_primitive!(AtomicPtr<T>(*mut T), size("ptr"), align(4));
+#[cfg(target_pointer_width = "64")]
+impl_atomic_primitive!(AtomicPtr<T>(*mut T), size("ptr"), align(8));
+
+/// A memory location which can be safely modified from multiple threads.
+///
+/// This has the same size and bit validity as the underlying type `T`. However,
+/// the alignment of this type is always equal to its size, even on targets where
+/// `T` has alignment less than its size.
+///
+/// For more about the differences between atomic types and non-atomic types as
+/// well as information about the portability of this type, please see the
+/// [module-level documentation].
+///
+/// **Note:** This type is only available on platforms that support atomic loads
+/// and stores of `T`.
+///
+/// [module-level documentation]: crate::sync::atomic
+#[unstable(feature = "generic_atomic", issue = "130539")]
+pub type Atomic<T> = <T as AtomicPrimitive>::AtomicInner;
 
 // Some architectures don't have byte-sized atomics, which results in LLVM
 // emulating them using a LL/SC loop. However for AtomicBool we can take
@@ -469,6 +563,7 @@ impl AtomicBool {
     ///
     /// [valid]: crate::ptr#safety
     /// [Memory model for atomic accesses]: self#memory-model-for-atomic-accesses
+    #[inline]
     #[stable(feature = "atomic_from_ptr", since = "1.75.0")]
     #[rustc_const_stable(feature = "const_atomic_from_ptr", since = "1.84.0")]
     pub const unsafe fn from_ptr<'a>(ptr: *mut bool) -> &'a AtomicBool {
@@ -527,7 +622,7 @@ impl AtomicBool {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore-wasm
     /// #![feature(atomic_from_mut)]
     /// use std::sync::atomic::{AtomicBool, Ordering};
     ///
@@ -558,7 +653,7 @@ impl AtomicBool {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust,ignore-wasm
     /// #![feature(atomic_from_mut)]
     /// use std::sync::atomic::{AtomicBool, Ordering};
     ///
@@ -1389,6 +1484,7 @@ impl<T> AtomicPtr<T> {
     ///
     /// [valid]: crate::ptr#safety
     /// [Memory model for atomic accesses]: self#memory-model-for-atomic-accesses
+    #[inline]
     #[stable(feature = "atomic_from_ptr", since = "1.75.0")]
     #[rustc_const_stable(feature = "const_atomic_from_ptr", since = "1.84.0")]
     pub const unsafe fn from_ptr<'a>(ptr: *mut *mut T) -> &'a AtomicPtr<T> {
@@ -1452,7 +1548,7 @@ impl<T> AtomicPtr<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore-wasm
     /// #![feature(atomic_from_mut)]
     /// use std::ptr::null_mut;
     /// use std::sync::atomic::{AtomicPtr, Ordering};
@@ -1489,7 +1585,7 @@ impl<T> AtomicPtr<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore-wasm
     /// #![feature(atomic_from_mut)]
     /// use std::ptr::null_mut;
     /// use std::sync::atomic::{AtomicPtr, Ordering};
@@ -2525,6 +2621,7 @@ macro_rules! atomic_int {
             ///
             /// [valid]: crate::ptr#safety
             /// [Memory model for atomic accesses]: self#memory-model-for-atomic-accesses
+            #[inline]
             #[stable(feature = "atomic_from_ptr", since = "1.75.0")]
             #[rustc_const_stable(feature = "const_atomic_from_ptr", since = "1.84.0")]
             pub const unsafe fn from_ptr<'a>(ptr: *mut $int_type) -> &'a $atomic_type {
@@ -2595,7 +2692,7 @@ macro_rules! atomic_int {
             ///
             /// # Examples
             ///
-            /// ```
+            /// ```ignore-wasm
             /// #![feature(atomic_from_mut)]
             #[doc = concat!($extra_feature, "use std::sync::atomic::{", stringify!($atomic_type), ", Ordering};")]
             ///
@@ -2628,7 +2725,7 @@ macro_rules! atomic_int {
             ///
             /// # Examples
             ///
-            /// ```
+            /// ```ignore-wasm
             /// #![feature(atomic_from_mut)]
             #[doc = concat!($extra_feature, "use std::sync::atomic::{", stringify!($atomic_type), ", Ordering};")]
             ///
@@ -3725,6 +3822,7 @@ unsafe fn atomic_store<T: Copy>(dst: *mut T, val: T, order: Ordering) {
 
 #[inline]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
+#[cfg(bootstrap)]
 unsafe fn atomic_load<T: Copy>(dst: *const T, order: Ordering) -> T {
     // SAFETY: the caller must uphold the safety contract for `atomic_load`.
     unsafe {
@@ -3732,6 +3830,23 @@ unsafe fn atomic_load<T: Copy>(dst: *const T, order: Ordering) -> T {
             Relaxed => intrinsics::atomic_load_relaxed(dst),
             Acquire => intrinsics::atomic_load_acquire(dst),
             SeqCst => intrinsics::atomic_load_seqcst(dst),
+            Release => panic!("there is no such thing as a release load"),
+            AcqRel => panic!("there is no such thing as an acquire-release load"),
+        }
+    }
+}
+
+#[inline]
+#[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
+#[cfg(not(bootstrap))]
+unsafe fn atomic_load<T: Copy>(dst: *const T, order: Ordering) -> T {
+    use intrinsics::AtomicOrdering;
+    // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+    unsafe {
+        match order {
+            Relaxed => intrinsics::atomic_load::<T, { AtomicOrdering::Relaxed }>(dst),
+            Acquire => intrinsics::atomic_load::<T, { AtomicOrdering::Acquire }>(dst),
+            SeqCst => intrinsics::atomic_load::<T, { AtomicOrdering::SeqCst }>(dst),
             Release => panic!("there is no such thing as a release load"),
             AcqRel => panic!("there is no such thing as an acquire-release load"),
         }
@@ -3788,10 +3903,13 @@ unsafe fn atomic_sub<T: Copy>(dst: *mut T, val: T, order: Ordering) -> T {
     }
 }
 
+/// Publicly exposed for stdarch; nobody else should use this.
 #[inline]
 #[cfg(target_has_atomic)]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
-unsafe fn atomic_compare_exchange<T: Copy>(
+#[unstable(feature = "core_intrinsics", issue = "none")]
+#[doc(hidden)]
+pub unsafe fn atomic_compare_exchange<T: Copy>(
     dst: *mut T,
     old: T,
     new: T,

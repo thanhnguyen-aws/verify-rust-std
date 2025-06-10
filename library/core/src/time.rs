@@ -392,7 +392,7 @@ impl Duration {
     /// # Examples
     ///
     /// ```
-    /// #![feature(duration_constructors)]
+    /// #![feature(duration_constructors_lite)]
     /// use std::time::Duration;
     ///
     /// let duration = Duration::from_hours(6);
@@ -400,7 +400,7 @@ impl Duration {
     /// assert_eq!(6 * 60 * 60, duration.as_secs());
     /// assert_eq!(0, duration.subsec_nanos());
     /// ```
-    #[unstable(feature = "duration_constructors", issue = "120301")]
+    #[unstable(feature = "duration_constructors_lite", issue = "140881")]
     #[must_use]
     #[inline]
     pub const fn from_hours(hours: u64) -> Duration {
@@ -420,7 +420,7 @@ impl Duration {
     /// # Examples
     ///
     /// ```
-    /// #![feature(duration_constructors)]
+    /// #![feature(duration_constructors_lite)]
     /// use std::time::Duration;
     ///
     /// let duration = Duration::from_mins(10);
@@ -428,7 +428,7 @@ impl Duration {
     /// assert_eq!(10 * 60, duration.as_secs());
     /// assert_eq!(0, duration.subsec_nanos());
     /// ```
-    #[unstable(feature = "duration_constructors", issue = "120301")]
+    #[unstable(feature = "duration_constructors_lite", issue = "140881")]
     #[must_use]
     #[inline]
     pub const fn from_mins(mins: u64) -> Duration {
@@ -1754,30 +1754,6 @@ pub mod duration_verify {
         let secs = kani::any::<u64>();
         let nanos = kani::any::<u32>();
         let _ = Duration::new(secs, nanos);
-    }
-
-    #[kani::proof_for_contract(Duration::from_secs)]
-    fn duration_from_secs() {
-        let secs = kani::any::<u64>();
-        let _ = Duration::from_secs(secs);
-    }
-
-    #[kani::proof_for_contract(Duration::from_millis)]
-    fn duration_from_millis() {
-        let ms = kani::any::<u64>();
-        let _ = Duration::from_millis(ms);
-    }
-
-    #[kani::proof_for_contract(Duration::from_micros)]
-    fn duration_from_micros() {
-        let micros = kani::any::<u64>();
-        let _ = Duration::from_micros(micros);
-    }
-
-    #[kani::proof_for_contract(Duration::from_nanos)]
-    fn duration_from_nanos() {
-        let nanos = kani::any::<u64>();
-        let _ = Duration::from_nanos(nanos);
     }
 
     #[kani::proof_for_contract(Duration::as_secs)]

@@ -50,6 +50,7 @@ mod uint_macros; // import uint_impl!
 mod error;
 mod int_log10;
 mod int_sqrt;
+pub(crate) mod libm;
 mod nonzero;
 mod overflow_panic;
 mod saturating;
@@ -103,8 +104,8 @@ macro_rules! i8_xe_bytes_doc {
 
 **Note**: This function is meaningless on `i8`. Byte order does not exist as a
 concept for byte-sized integers. This function is only provided in symmetry
-with larger integer types. You can cast from and to `u8` using `as i8` and `as
-u8`.
+with larger integer types. You can cast from and to `u8` using
+[`cast_signed`](u8::cast_signed) and [`cast_unsigned`](Self::cast_unsigned).
 
 "
     };
@@ -134,7 +135,7 @@ depending on the target pointer size.
 
 macro_rules! midpoint_impl {
     ($SelfT:ty, unsigned) => {
-        /// Calculates the middle point of `self` and `rhs`.
+        /// Calculates the midpoint (average) between `self` and `rhs`.
         ///
         /// `midpoint(a, b)` is `(a + b) / 2` as if it were performed in a
         /// sufficiently-large unsigned integral type. This implies that the result is
@@ -150,6 +151,8 @@ macro_rules! midpoint_impl {
         #[rustc_const_stable(feature = "num_midpoint", since = "1.85.0")]
         #[must_use = "this returns the result of the operation, \
                       without modifying the original"]
+        #[doc(alias = "average_floor")]
+        #[doc(alias = "average")]
         #[inline]
         pub const fn midpoint(self, rhs: $SelfT) -> $SelfT {
             // Use the well known branchless algorithm from Hacker's Delight to compute
@@ -158,7 +161,7 @@ macro_rules! midpoint_impl {
         }
     };
     ($SelfT:ty, signed) => {
-        /// Calculates the middle point of `self` and `rhs`.
+        /// Calculates the midpoint (average) between `self` and `rhs`.
         ///
         /// `midpoint(a, b)` is `(a + b) / 2` as if it were performed in a
         /// sufficiently-large signed integral type. This implies that the result is
@@ -173,10 +176,13 @@ macro_rules! midpoint_impl {
         #[doc = concat!("assert_eq!(0", stringify!($SelfT), ".midpoint(-7), -3);")]
         #[doc = concat!("assert_eq!(0", stringify!($SelfT), ".midpoint(7), 3);")]
         /// ```
-        #[stable(feature = "num_midpoint_signed", since = "CURRENT_RUSTC_VERSION")]
-        #[rustc_const_stable(feature = "num_midpoint_signed", since = "CURRENT_RUSTC_VERSION")]
+        #[stable(feature = "num_midpoint_signed", since = "1.87.0")]
+        #[rustc_const_stable(feature = "num_midpoint_signed", since = "1.87.0")]
         #[must_use = "this returns the result of the operation, \
                       without modifying the original"]
+        #[doc(alias = "average_floor")]
+        #[doc(alias = "average_ceil")]
+        #[doc(alias = "average")]
         #[inline]
         pub const fn midpoint(self, rhs: Self) -> Self {
             // Use the well known branchless algorithm from Hacker's Delight to compute
@@ -188,7 +194,7 @@ macro_rules! midpoint_impl {
         }
     };
     ($SelfT:ty, $WideT:ty, unsigned) => {
-        /// Calculates the middle point of `self` and `rhs`.
+        /// Calculates the midpoint (average) between `self` and `rhs`.
         ///
         /// `midpoint(a, b)` is `(a + b) / 2` as if it were performed in a
         /// sufficiently-large unsigned integral type. This implies that the result is
@@ -204,13 +210,15 @@ macro_rules! midpoint_impl {
         #[rustc_const_stable(feature = "num_midpoint", since = "1.85.0")]
         #[must_use = "this returns the result of the operation, \
                       without modifying the original"]
+        #[doc(alias = "average_floor")]
+        #[doc(alias = "average")]
         #[inline]
         pub const fn midpoint(self, rhs: $SelfT) -> $SelfT {
             ((self as $WideT + rhs as $WideT) / 2) as $SelfT
         }
     };
     ($SelfT:ty, $WideT:ty, signed) => {
-        /// Calculates the middle point of `self` and `rhs`.
+        /// Calculates the midpoint (average) between `self` and `rhs`.
         ///
         /// `midpoint(a, b)` is `(a + b) / 2` as if it were performed in a
         /// sufficiently-large signed integral type. This implies that the result is
@@ -225,10 +233,13 @@ macro_rules! midpoint_impl {
         #[doc = concat!("assert_eq!(0", stringify!($SelfT), ".midpoint(-7), -3);")]
         #[doc = concat!("assert_eq!(0", stringify!($SelfT), ".midpoint(7), 3);")]
         /// ```
-        #[stable(feature = "num_midpoint_signed", since = "CURRENT_RUSTC_VERSION")]
-        #[rustc_const_stable(feature = "num_midpoint_signed", since = "CURRENT_RUSTC_VERSION")]
+        #[stable(feature = "num_midpoint_signed", since = "1.87.0")]
+        #[rustc_const_stable(feature = "num_midpoint_signed", since = "1.87.0")]
         #[must_use = "this returns the result of the operation, \
                       without modifying the original"]
+        #[doc(alias = "average_floor")]
+        #[doc(alias = "average_ceil")]
+        #[doc(alias = "average")]
         #[inline]
         pub const fn midpoint(self, rhs: $SelfT) -> $SelfT {
             ((self as $WideT + rhs as $WideT) / 2) as $SelfT
@@ -484,6 +495,26 @@ impl u8 {
     #[inline]
     pub const fn as_ascii(&self) -> Option<ascii::Char> {
         ascii::Char::from_u8(*self)
+    }
+
+    /// Converts this byte to an [ASCII character](ascii::Char), without
+    /// checking whether or not it's valid.
+    ///
+    /// # Safety
+    ///
+    /// This byte must be valid ASCII, or else this is UB.
+    #[must_use]
+    #[unstable(feature = "ascii_char", issue = "110998")]
+    #[inline]
+    pub const unsafe fn as_ascii_unchecked(&self) -> ascii::Char {
+        assert_unsafe_precondition!(
+            check_library_ub,
+            "as_ascii_unchecked requires that the byte is valid ASCII",
+            (it: &u8 = self) => it.is_ascii()
+        );
+
+        // SAFETY: the caller promised that this byte is ASCII.
+        unsafe { ascii::Char::from_u8_unchecked(*self) }
     }
 
     /// Makes a copy of the value in its ASCII upper case equivalent.
