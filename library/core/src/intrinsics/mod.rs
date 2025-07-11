@@ -54,14 +54,11 @@
 )]
 #![allow(missing_docs)]
 
-<<<<<<< HEAD
 use safety::{ensures, requires};
 
+use crate::ffi::va_list::{VaArgSafe, VaListImpl};
 #[cfg(kani)]
 use crate::kani;
-=======
-use crate::ffi::va_list::{VaArgSafe, VaListImpl};
->>>>>>> subtree/library
 use crate::marker::{ConstParamTy, DiscriminantKind, PointeeSized, Tuple};
 use crate::ptr;
 #[cfg(kani)]
@@ -3226,7 +3223,28 @@ pub(crate) const fn miri_promise_symbolic_alignment(ptr: *const (), align: usize
     )
 }
 
-<<<<<<< HEAD
+/// Copies the current location of arglist `src` to the arglist `dst`.
+///
+/// FIXME: document safety requirements
+#[rustc_intrinsic]
+#[rustc_nounwind]
+pub unsafe fn va_copy<'f>(dest: *mut VaListImpl<'f>, src: &VaListImpl<'f>);
+
+/// Loads an argument of type `T` from the `va_list` `ap` and increment the
+/// argument `ap` points to.
+///
+/// FIXME: document safety requirements
+#[rustc_intrinsic]
+#[rustc_nounwind]
+pub unsafe fn va_arg<T: VaArgSafe>(ap: &mut VaListImpl<'_>) -> T;
+
+/// Destroy the arglist `ap` after initialization with `va_start` or `va_copy`.
+///
+/// FIXME: document safety requirements
+#[rustc_intrinsic]
+#[rustc_nounwind]
+pub unsafe fn va_end(ap: &mut VaListImpl<'_>);
+
 #[cfg(kani)]
 #[unstable(feature = "kani", issue = "none")]
 mod verify {
@@ -3908,26 +3926,3 @@ mod verify {
         status != AllocationStatus::Dangling && status != AllocationStatus::DeadObject
     }
 }
-=======
-/// Copies the current location of arglist `src` to the arglist `dst`.
-///
-/// FIXME: document safety requirements
-#[rustc_intrinsic]
-#[rustc_nounwind]
-pub unsafe fn va_copy<'f>(dest: *mut VaListImpl<'f>, src: &VaListImpl<'f>);
-
-/// Loads an argument of type `T` from the `va_list` `ap` and increment the
-/// argument `ap` points to.
-///
-/// FIXME: document safety requirements
-#[rustc_intrinsic]
-#[rustc_nounwind]
-pub unsafe fn va_arg<T: VaArgSafe>(ap: &mut VaListImpl<'_>) -> T;
-
-/// Destroy the arglist `ap` after initialization with `va_start` or `va_copy`.
-///
-/// FIXME: document safety requirements
-#[rustc_intrinsic]
-#[rustc_nounwind]
-pub unsafe fn va_end(ap: &mut VaListImpl<'_>);
->>>>>>> subtree/library
