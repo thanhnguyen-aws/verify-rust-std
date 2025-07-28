@@ -172,7 +172,7 @@ pub mod verify {
     #[cfg(not(all(target_arch = "x86_64", target_feature = "sse2")))]
     pub fn check_memchr_naive() {
         const ARR_SIZE: usize = 1000;
-        let x:  u8 = kani::any();
+        let x: u8 = kani::any();
         let a: [u8; ARR_SIZE] = kani::any();
         let text = kani::slice::any_slice_of_array(&a);
         let _result = memchr_naive(x, text);
@@ -182,10 +182,9 @@ pub mod verify {
     #[cfg(not(all(target_arch = "x86_64", target_feature = "sse2")))]
     pub fn check_memchr_naive() {
         const ARR_SIZE: usize = 1000;
-        let x:  u8 = kani::any();
+        let x: u8 = kani::any();
         let a: [u8; ARR_SIZE] = kani::any();
         let text = kani::slice::any_slice_of_array(&a);
         let _result = memrchr(x, text);
     }
-
 }
