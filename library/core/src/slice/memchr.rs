@@ -180,7 +180,7 @@ pub mod verify {
 
     #[kani::proof]
     #[cfg(not(all(target_arch = "x86_64", target_feature = "sse2")))]
-    pub fn check_memchr_naive() {
+    pub fn check_memchr() {
         const ARR_SIZE: usize = 1000;
         let x: u8 = kani::any();
         let a: [u8; ARR_SIZE] = kani::any();
