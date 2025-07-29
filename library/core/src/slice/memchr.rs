@@ -79,7 +79,7 @@ const fn memchr_aligned(x: u8, text: &[u8]) -> Option<usize> {
 
             // search the body of the text
             let repeated_x = usize::repeat_u8(x);
-            #[safety::loop_invariant(len >= 2 * USIZE_BYTES && )]
+            #[safety::loop_invariant(len >= 2 * USIZE_BYTES && offset <= len)]
             while offset <= len - 2 * USIZE_BYTES {
                 // SAFETY: the while's predicate guarantees a distance of at least 2 * usize_bytes
                 // between the offset and the end of the slice.
