@@ -1009,7 +1009,7 @@ impl<T> [T] {
 
             let mut i = 0;
             #[safety::loop_invariant(i <= n)]
-            #[safety::loop_modifies(unsafe {slice::from_raw_parts_mut(a.as_mut_ptr(), n)}, unsafe {slice::from_raw_parts_mut(b.as_mut_ptr(), n)}, &i)]
+            #[kani::loop_modifies(unsafe {slice::from_raw_parts_mut(a.as_mut_ptr(), n)}, unsafe {slice::from_raw_parts_mut(b.as_mut_ptr(), n)}, &i)]
             while i < n {
                 mem::swap(&mut a[i], &mut b[n - 1 - i]);
                 i += 1;
@@ -5570,7 +5570,7 @@ mod verify {
 
     #[kani::proof]
     fn check_reverse() {
-        let a: [u8; 100] = kani::any();
-        let b = a.reverse();
+        let mut a: [u8; 100] = kani::any();
+        a.reverse();
     }
 }
