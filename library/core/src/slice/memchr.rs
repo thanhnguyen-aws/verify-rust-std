@@ -168,7 +168,7 @@ pub fn memrchr(x: u8, text: &[u8]) -> Option<usize> {
 pub mod verify {
     use super::*;
     use crate::kani;
-    
+
     #[kani::proof]
     #[cfg(not(all(target_arch = "x86_64", target_feature = "sse2")))]
     pub fn check_memchr_naive() {
