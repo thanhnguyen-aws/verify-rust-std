@@ -190,7 +190,6 @@ impl DecimalSeq {
             } else if n == 0 {
                 return;
             } else {
-                kani::assume(read_index == self.num_digits);
                 #[kani::loop_invariant(n > 0 && read_index <= self.num_digits + 64 - n.leading_zeros() as usize && read_index > 0)]
                 while (n >> shift) == 0 {
                     n *= 10;
