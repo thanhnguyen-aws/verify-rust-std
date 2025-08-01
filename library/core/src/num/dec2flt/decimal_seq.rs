@@ -9,8 +9,8 @@
 //! algorithm can be found in "ParseNumberF64 by Simple Decimal Conversion",
 //! available online: <https://nigeltao.github.io/blog/2020/parse-number-f64-simple.html>.
 
-use crate::num::dec2flt::common::{ByteSlice, is_8digits};
 use crate::kani;
+use crate::num::dec2flt::common::{ByteSlice, is_8digits};
 
 /// A decimal floating-point number, represented as a sequence of decimal digits.
 #[derive(Clone, Debug, PartialEq)]
@@ -132,9 +132,9 @@ impl DecimalSeq {
         let mut read_index = self.num_digits;
         let mut write_index = self.num_digits + num_new_digits;
         let mut n = 0_u64;
-        
-        #[kani::loop_invariant(read_index <= Self::MAX_DIGITS && 
-            write_index == read_index + num_new_digits && 
+
+        #[kani::loop_invariant(read_index <= Self::MAX_DIGITS &&
+            write_index == read_index + num_new_digits &&
             n < 10u64 << (shift - 1) &&
             self.num_digits <= Self::MAX_DIGITS &&
             self.decimal_point <= self.num_digits as i32 &&
@@ -207,8 +207,8 @@ impl DecimalSeq {
             return;
         }
         let mask = (1_u64 << shift) - 1;
-        #[kani::loop_invariant(self.num_digits <= Self::MAX_DIGITS && 
-            write_index < read_index && 
+        #[kani::loop_invariant(self.num_digits <= Self::MAX_DIGITS &&
+            write_index < read_index &&
             write_index < Self::MAX_DIGITS - self.num_digits.saturating_sub(read_index)
         )]
         while read_index < self.num_digits {
@@ -408,13 +408,14 @@ pub mod decimal_seq_verify {
                 num_digits: kani::any(),
                 decimal_point: kani::any(),
                 truncated: kani::any(),
-                digits:  kani::any() };
+                digits: kani::any(),
+            };
             kani::assume(a.num_digits <= DecimalSeq::MAX_DIGITS);
-            kani::assume(a.decimal_point>=0);
+            kani::assume(a.decimal_point >= 0);
             kani::assume(a.decimal_point <= a.num_digits as i32);
             kani::assume(kani::forall!(|i in (0,DecimalSeq::MAX_DIGITS)| a.digits[i] <= 9));
-            ret                   
-        }        
+            ret
+        }
     }
 
     #[kani::proof]
@@ -428,6 +429,8 @@ pub mod decimal_seq_verify {
         let mut a: DecimalSeq = kani::any();
         let shift: usize = kani::any_where(|x| *x > 0 && *x <= 60);
         let n = number_of_digits_decimal_left_shift(&a, shift);
+        // 19 is the greatest number x such that 10u64^x does not overflow
+        // It is also TABLE.max << 11
         assert!(n <= 19);
         assert!(n == 19 || 1u64 << shift < 10u64.pow(n as u32 + 1))
     }
@@ -435,6 +438,7 @@ pub mod decimal_seq_verify {
     #[kani::proof]
     fn check_right_shift() {
         let mut a: DecimalSeq = kani::any();
+        //This function is called in parse_long_mantissa function (slow.rs), in which the maximum of shift is 60
         let shift: usize = kani::any_where(|x| *x > 0 && *x <= 60);
         a.right_shift(shift);
     }
