@@ -411,10 +411,10 @@ pub mod decimal_seq_verify {
                 truncated: kani::any(),
                 digits: kani::any(),
             };
-            kani::assume(a.num_digits <= DecimalSeq::MAX_DIGITS);
-            kani::assume(a.decimal_point >= 0);
-            kani::assume(a.decimal_point <= a.num_digits as i32);
-            kani::assume(kani::forall!(|i in (0,DecimalSeq::MAX_DIGITS)| a.digits[i] <= 9));
+            kani::assume(ret.num_digits <= DecimalSeq::MAX_DIGITS);
+            kani::assume(ret.decimal_point >= 0);
+            kani::assume(ret.decimal_point <= a.num_digits as i32);
+            kani::assume(kani::forall!(|i in (0,DecimalSeq::MAX_DIGITS)| ret.digits[i] <= 9));
             ret
         }
     }
