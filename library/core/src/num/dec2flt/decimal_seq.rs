@@ -406,14 +406,12 @@ pub mod decimal_seq_verify {
     impl kani::Arbitrary for DecimalSeq {
         fn any() -> DecimalSeq {
             let mut ret = DecimalSeq {
-                num_digits: kani::any(),
-                decimal_point: kani::any(),
+                num_digits: kani::any_where(|x| *x <= DecimalSeq::MAX_DIGITS),
+                decimal_point: kani::any_where(|x| *x >= 0),
                 truncated: kani::any(),
                 digits: kani::any(),
             };
-            kani::assume(ret.num_digits <= DecimalSeq::MAX_DIGITS);
-            kani::assume(ret.decimal_point >= 0);
-            kani::assume(ret.decimal_point <= a.num_digits as i32);
+            kani::assume(ret.decimal_point <= ret.num_digits as i32);
             kani::assume(kani::forall!(|i in (0,DecimalSeq::MAX_DIGITS)| ret.digits[i] <= 9));
             ret
         }
