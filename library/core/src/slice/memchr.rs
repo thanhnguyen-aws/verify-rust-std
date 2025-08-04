@@ -2,6 +2,7 @@
 // Copyright 2015 Andrew Gallant, bluss and Nicolas Koch
 
 use crate::intrinsics::const_eval_select;
+use crate::kani;
 
 const LO_USIZE: usize = usize::repeat_u8(0x01);
 const HI_USIZE: usize = usize::repeat_u8(0x80);
@@ -36,7 +37,7 @@ const fn memchr_naive(x: u8, text: &[u8]) -> Option<usize> {
     let mut i = 0;
 
     // FIXME(const-hack): Replace with `text.iter().pos(|c| *c == x)`.
-    #[safety::loop_invariant(i <= text.len() && kani::forall!(|j in (0,i)| unsafe {*text.as_ptr().wrapping_add(j)} != x))]
+    #[kani::loop_invariant(i <= text.len() && kani::forall!(|j in (0,i)| unsafe {*text.as_ptr().wrapping_add(j)} != x))]
     while i < text.len() {
         if text[i] == x {
             return Some(i);
@@ -79,7 +80,7 @@ const fn memchr_aligned(x: u8, text: &[u8]) -> Option<usize> {
 
             // search the body of the text
             let repeated_x = usize::repeat_u8(x);
-            #[safety::loop_invariant(len >= 2 * USIZE_BYTES && offset <= len &&
+            #[kani::loop_invariant(len >= 2 * USIZE_BYTES && offset <= len &&
                 kani::forall!(|j in (0,offset)| unsafe {*text.as_ptr().wrapping_add(j)} != x))]
             while offset <= len - 2 * USIZE_BYTES {
                 // SAFETY: the while's predicate guarantees a distance of at least 2 * usize_bytes
@@ -142,7 +143,7 @@ pub fn memrchr(x: u8, text: &[u8]) -> Option<usize> {
     let repeated_x = usize::repeat_u8(x);
     let chunk_bytes = size_of::<Chunk>();
 
-    #[safety::loop_invariant(true)]
+    #[kani::loop_invariant(true)]
     while offset > min_aligned_offset {
         // SAFETY: offset starts at len - suffix.len(), as long as it is greater than
         // min_aligned_offset (prefix.len()) the remaining distance is at least 2 * chunk_bytes.
@@ -168,7 +169,6 @@ pub fn memrchr(x: u8, text: &[u8]) -> Option<usize> {
 #[unstable(feature = "kani", issue = "none")]
 pub mod verify {
     use super::*;
-    use crate::kani;
 
     #[kani::proof]
     #[kani::solver(cvc5)]
