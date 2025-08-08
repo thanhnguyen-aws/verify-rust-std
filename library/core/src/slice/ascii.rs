@@ -572,7 +572,7 @@ pub mod verify {
     #[kani::proof]
     fn check_is_ascii_simple() {
         let mut bytes: [u8; 100] = kani::any();
-        let _ret = bytes.is_ascii_simple();
+        let _ret = is_ascii_simple(bytes.as_slice());
     }
 
     #[kani::proof]
